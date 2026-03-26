@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(C:\\\\Users\\\\a\\\\.specify\\\\scripts\\\\powershell\\\\check-prerequisites.ps1:*)",
+      "Bash(powershell.exe:*)",
+      "Bash(wc:*)",
+      "Bash(git fetch:*)",
+      "Bash(.specify\\\\scripts\\\\powershell\\\\create-new-feature.ps1:*)",
+      "Bash(.specify\\\\scripts\\\\bash\\\\create-phr.sh:*)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1:*)",
+      "Bash(specs/001-digital-fte-agent/plan.md:*)",
+      "Bash(.specify/scripts/bash/create-phr.sh:*)",
+      "Bash(git init:*)",
+      "Bash(git:*)"
+    ]
+  }
+}

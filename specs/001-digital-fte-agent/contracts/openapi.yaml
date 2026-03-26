@@ -1,0 +1,331 @@
+openapi: 3.0.3
+info:
+  title: Digital FTE AI Customer Success Agent API
+  description: API for handling customer support inquiries across multiple channels
+  version: 1.0.0
+servers:
+  - url: https://api.digitalfte.example.com/v1
+    description: Production server
+  - url: https://api-staging.digitalfte.example.com/v1
+    description: Staging server
+  - url: http://localhost:8000/v1
+    description: Development server
+paths:
+  /tickets:
+    post:
+      summary: Create a new support ticket from customer inquiry
+      operationId: createTicket
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketCreateRequest'
+      responses:
+        '201':
+          description: Ticket created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '400':
+          description: Invalid request data
+        '500':
+          description: Internal server error
+  /tickets/{ticket_id}:
+    get:
+      summary: Retrieve a specific support ticket
+      operationId: getTicket
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Ticket retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '404':
+          description: Ticket not found
+        '500':
+          description: Internal server error
+    put:
+      summary: Update a support ticket (typically for AI response or escalation)
+      operationId: updateTicket
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketUpdateRequest'
+      responses:
+        '200':
+          description: Ticket updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketResponse'
+        '400':
+          description: Invalid request data
+        '404':
+          description: Ticket not found
+        '500':
+          description: Internal server error
+  /tickets/{ticket_id}/escalate:
+    post:
+      summary: Escalate a ticket to human agent
+      operationId: escalateTicket
+      parameters:
+        - name: ticket_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EscalationRequest'
+      responses:
+        '200':
+          description: Ticket escalated successfully
+        '404':
+          description: Ticket not found
+        '500':
+          description: Internal server error
+  /customers/identify:
+    post:
+      summary: Identify or create customer from channel-specific identifiers
+      operationId: identifyCustomer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomerIdentifyRequest'
+      responses:
+        '200':
+          description: Customer identified/created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerResponse'
+        '400':
+          description: Invalid request data
+        '500':
+          description: Internal server error
+  /sentiment/report/daily:
+    get:
+      summary: Retrieve daily sentiment report
+      operationId: getDailySentimentReport
+      responses:
+        '200':
+          description: Daily sentiment report retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DailySentimentReport'
+        '500':
+          description: Internal server error
+components:
+  schemas:
+    TicketCreateRequest:
+      type: object
+      required:
+        - channel
+        - content
+      properties:
+        channel:
+          type: string
+          enum: [email, whatsapp, web_form]
+        external_id:
+          type: string
+          description: External system message ID (Gmail, WhatsApp, etc.)
+        subject:
+          type: string
+          maxLength: 200
+        content:
+          type: string
+          minLength: 1
+          maxLength: 5000
+        customer_identifier:
+          type: object
+          description: Channel-specific customer identifier
+          properties:
+            email:
+              type: string
+              format: email
+            phone_number:
+              type: string
+              pattern: '^\\+?[1-9]\\d{1,14}$'
+            session_id:
+              type: string
+    TicketUpdateRequest:
+      type: object
+      properties:
+        ai_response:
+          type: string
+          maxLength: 5000
+        sentiment:
+          type: string
+          enum: [positive, neutral, negative]
+        confidence_score:
+          type: number
+          minimum: 0
+          maximum: 1
+        escalated:
+          type: boolean
+        escalation_reason:
+          type: string
+          maxLength: 200
+        resolution_category:
+          type: string
+          maxLength: 100
+        resolved_at:
+          type: string
+          format: date-time
+    TicketResponse:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/TicketCreateRequest'
+        - type: object
+          properties:
+            id:
+              type: string
+              format: uuid
+            received_at:
+              type: string
+              format: date-time
+            responded_at:
+              type: string
+              format: date-time
+            resolved_at:
+              type: string
+              format: date-time
+            ai_response:
+              type: string
+            sentiment:
+              type: string
+              enum: [positive, neutral, negative]
+            confidence_score:
+              type: number
+              minimum: 0
+              maximum: 1
+            escalated:
+              type: boolean
+            escalation_reason:
+              type: string
+            resolution_category:
+              type: string
+            metadata:
+              type: object
+    CustomerIdentifyRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        phone_number:
+          type: string
+          pattern: '^\\+?[1-9]\\d{1,14}$'
+        session_id:
+          type: string
+    CustomerResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        phone_number:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        metadata:
+          type: object
+        is_active:
+          type: boolean
+    EscalationRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          enum: [pricing, refund, legal, profanity, repeated_unresolved, low_confidence, language_unsupported]
+        notes:
+          type: string
+          maxLength: 1000
+    DailySentimentReport:
+      type: object
+      properties:
+        date:
+          type: string
+          format: date
+        total_interactions:
+          type: integer
+          minimum: 0
+        resolved_by_ai:
+          type: integer
+          minimum: 0
+        escalated_to_human:
+          type: integer
+          minimum: 0
+        average_sentiment_score:
+          type: number
+          minimum: -1
+          maximum: 1
+        sentiment_distribution:
+          type: object
+          properties:
+            positive:
+              type: integer
+              minimum: 0
+            neutral:
+              type: integer
+              minimum: 0
+            negative:
+              type: integer
+              minimum: 0
+        channel_breakdown:
+          type: object
+          additionalProperties:
+            type: integer
+            minimum: 0
+        top_issues:
+          type: array
+          items:
+            type: object
+            properties:
+              category:
+                type: string
+                maxLength: 100
+              count:
+                type: integer
+                minimum: 0
+        average_response_time_ms:
+          type: integer
+          minimum: 0
+        generated_at:
+          type: string
+          format: date-time

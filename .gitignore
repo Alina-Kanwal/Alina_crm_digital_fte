@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+*.pyd
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
+dist/
+build/
+*.egg-info/
+.coverage
+htmlcov/
+.tox/
+.nox/
+.cache
+.mypy_cache
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Next.js
+.next/
+out/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.development
+.env.production
+
+# Secrets
+*.key
+*.pem
+*.p12
+*.pfx
+secrets/
+
+# Kafka
+kafka-logs/
+
+# Docker
+docker-compose.override.yml
+
+# Kubernetes
+.kube/
+
+# Misc
+*.tmp
+*.temp
+.Dockerfile
+!.dockerignore
