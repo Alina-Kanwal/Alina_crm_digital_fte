@@ -1,0 +1,63 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg15
+    container_name: digital-fte-postgres
+    environment:
+      POSTGRES_USER: digital_fte
+      POSTGRES_PASSWORD: \${POSTGRES_PASSWORD:-changeme}
+      POSTGRES_DB: digital_fte
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.3
+    container_name: digital-fte-kafka
+    depends_on:
+      - zookeeper
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    ports:
+      - "9092:9092"
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.3
+    container_name: digital-fte-zookeeper
+    ports:
+      - "2181:2181"
+
+  redis:
+    image: redis:7-alpine
+    container_name: digital-fte-redis
+    ports:
+      - "6379:6379"
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: digital-fte-backend
+    depends_on:
+      - postgres
+      - kafka
+      - redis
+    environment:
+      DATABASE_URL: postgresql://digital_fte:\${POSTGRES_PASSWORD:-changeme}@postgres:5432/digital_fte
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      REDIS_URL: redis://localhost:6379/0
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: digital-fte-frontend
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"

@@ -78,3 +78,25 @@ docker-compose.override.yml
 *.temp
 .Dockerfile
 !.dockerignore
+
+# Helm
+*.helmignore
+charts/
+
+# Terraform
+.terraform/
+*.tfstate*
+*.tfvars
+.terraform.lock.hcl
+
+# Testing
+coverage.xml
+coverage.json
+.pytest_cache/
+.coverage
+htmlcov/
+benchmark/
+# Local artifacts
+test.db
+test_output.txt
+*.backup

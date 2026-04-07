@@ -1,0 +1,121 @@
+---
+# Celery Workers Deployment
+# Handles scheduled tasks: daily reports, sentiment analysis, escalation notifications
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digital-fte-workers
+  namespace: default
+  labels:
+    app: digital-fte-workers
+    component: background-worker
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: digital-fte-workers
+  template:
+    metadata:
+      labels:
+        app: digital-fte-workers
+        component: background-worker
+    spec:
+      # Rolling update strategy for workers
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: 1
+          maxUnavailable: 1
+      containers:
+      - name: celery-worker
+        image: digital-fte-backend:latest
+        imagePullPolicy: IfNotPresent
+        command: ["python", "-m", "celery", "-A", "src.worker.celery_app", "worker", "--loglevel=info", "--concurrency=2", "-B"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: digital-fte-secrets
+              key: database-url
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: kafka-bootstrap-servers
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: digital-fte-secrets
+              key: openai-api-key
+        - name: OPENAI_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: openai-base-url
+        - name: OPENAI_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: openai-model
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: redis-url
+        - name: C_FORCE_ROOT
+          value: "true"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 800m
+            memory: 512Mi
+        # Liveness probe - checks if worker process is running
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'celery.*worker' > /dev/null"
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        # Readiness probe - checks if worker can connect to Redis broker
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "python -c 'import redis; redis.Redis.from_url(\"$(REDIS_URL)\").ping()'"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+---
+# Service for workers (internal communication)
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-fte-workers-service
+  namespace: default
+  labels:
+    app: digital-fte-workers
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8081
+    targetPort: 8081
+    protocol: TCP
+    name: metrics
+  selector:
+    app: digital-fte-workers

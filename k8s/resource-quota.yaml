@@ -1,0 +1,116 @@
+---
+# Resource Quota for Digital FTE Application Namespace
+# Limits total resource consumption per namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: digital-fte-resource-quota
+  namespace: digital-fte
+spec:
+  hard:
+    # Compute resources
+    requests.cpu: "4"
+    requests.memory: 4Gi
+    limits.cpu: "16"
+    limits.memory: 16Gi
+
+    # Object counts
+    persistentvolumeclaims: "10"
+    services: "20"
+    secrets: "20"
+    configmaps: "20"
+---
+# Limit Range for Digital FTE Application Namespace
+# Sets default and maximum resource limits for pods
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: digital-fte-limit-range
+  namespace: digital-fte
+spec:
+  limits:
+  - default:      # Default limit for containers
+      cpu: "1000m"
+      memory: "1Gi"
+    defaultRequest: # Default request for containers
+      cpu: "250m"
+      memory: "256Mi"
+    max:          # Maximum limit for containers
+      cpu: "2000m"
+      memory: "2Gi"
+    min:          # Minimum request for containers
+      cpu: "100m"
+      memory: "128Mi"
+    type: Container
+---
+# Resource Quota for Monitoring Namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: monitoring-resource-quota
+  namespace: monitoring
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 2Gi
+    limits.cpu: "4"
+    limits.memory: 4Gi
+    persistentvolumeclaims: "5"
+---
+# Limit Range for Monitoring Namespace
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: monitoring-limit-range
+  namespace: monitoring
+spec:
+  limits:
+  - default:
+      cpu: "500m"
+      memory: "512Mi"
+    defaultRequest:
+      cpu: "100m"
+      memory: "128Mi"
+    max:
+      cpu: "1000m"
+      memory: "1Gi"
+    min:
+      cpu: "50m"
+      memory: "64Mi"
+    type: Container
+---
+# Resource Quota for Chaos Testing Namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: chaos-testing-resource-quota
+  namespace: chaos-testing
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 2Gi
+    limits.cpu: "6"
+    limits.memory: 6Gi
+    persistentvolumeclaims: "5"
+---
+# Limit Range for Chaos Testing Namespace
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: chaos-testing-limit-range
+  namespace: chaos-testing
+spec:
+  limits:
+  - default:
+      cpu: "1000m"
+      memory: "1Gi"
+    defaultRequest:
+      cpu: "200m"
+      memory: "256Mi"
+    max:
+      cpu: "2000m"
+      memory: "2Gi"
+    min:
+      cpu: "50m"
+      memory: "64Mi"
+    type: Container

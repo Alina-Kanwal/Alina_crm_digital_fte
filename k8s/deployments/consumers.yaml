@@ -1,0 +1,126 @@
+---
+# Kafka Consumers Deployment
+# Consumes messages from Kafka topics: customer-messages, agent-responses, escalations, metrics
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digital-fte-consumers
+  namespace: default
+  labels:
+    app: digital-fte-consumers
+    component: message-consumer
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: digital-fte-consumers
+  template:
+    metadata:
+      labels:
+        app: digital-fte-consumers
+        component: message-consumer
+    spec:
+      # Rolling update strategy for consumers
+      strategy:
+        type: RollingUpdate
+        rollingUpdate:
+          maxSurge: 1
+          maxUnavailable: 1
+      containers:
+      - name: kafka-consumer
+        image: digital-fte-backend:latest
+        imagePullPolicy: IfNotPresent
+        command: ["python", "-m", "celery", "-A", "src.worker.consumer", "worker", "--loglevel=info", "--concurrency=4"]
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: digital-fte-secrets
+              key: database-url
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: kafka-bootstrap-servers
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: digital-fte-secrets
+              key: openai-api-key
+        - name: OPENAI_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: openai-base-url
+        - name: OPENAI_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: openai-model
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: redis-url
+        - name: KAFKA_CONSUMER_GROUP
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: kafka-consumer-group
+        - name: C_FORCE_ROOT
+          value: "true"
+        resources:
+          requests:
+            cpu: 200m
+            memory: 256Mi
+          limits:
+            cpu: 800m
+            memory: 512Mi
+        # Liveness probe - checks if consumer process is running
+        livenessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "pgrep -f 'celery.*consumer' > /dev/null"
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        # Readiness probe - checks if consumer can connect to Kafka
+        readinessProbe:
+          exec:
+            command:
+            - /bin/sh
+            - -c
+            - "python -c 'import kafka; kafka.KafkaProducer(bootstrap_servers=\"$(KAFKA_BOOTSTRAP_SERVERS)\").close()'"
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+---
+# Service for consumers (internal communication)
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-fte-consumers-service
+  namespace: default
+  labels:
+    app: digital-fte-consumers
+spec:
+  type: ClusterIP
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: metrics
+  selector:
+    app: digital-fte-consumers

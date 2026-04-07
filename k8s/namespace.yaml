@@ -1,0 +1,30 @@
+---
+# Namespace for Digital FTE Application
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: digital-fte
+  labels:
+    app: digital-fte-agent
+    environment: production
+    team: customer-success
+---
+# Namespace for Monitoring
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: monitoring
+  labels:
+    app: digital-fte-monitoring
+    environment: production
+    team: observability
+---
+# Namespace for Chaos Testing
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: chaos-testing
+  labels:
+    app: digital-fte-chaos
+    environment: testing
+    team: reliability

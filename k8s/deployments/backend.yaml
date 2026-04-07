@@ -1,0 +1,112 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: digital-fte-backend
+  namespace: default
+  labels:
+    app: digital-fte-backend
+    component: api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: digital-fte-backend
+  # Rolling update strategy for zero-downtime deployments
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1           # Allow 1 extra pod during update
+      maxUnavailable: 0      # Never have 0 pods available
+  template:
+    metadata:
+      labels:
+        app: digital-fte-backend
+        component: api
+    spec:
+      containers:
+      - name: backend
+        image: digital-fte-backend:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - name: http
+          containerPort: 8000
+          protocol: TCP
+        env:
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: digital-fte-secrets
+              key: database-url
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: kafka-bootstrap-servers
+        - name: OPENAI_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: digital-fte-secrets
+              key: openai-api-key
+        - name: OPENAI_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: openai-base-url
+        - name: OPENAI_MODEL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: openai-model
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: digital-fte-config
+              key: redis-url
+        resources:
+          requests:
+            cpu: 250m
+            memory: 256Mi
+          limits:
+            cpu: 1000m
+            memory: 1Gi
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          successThreshold: 1
+          failureThreshold: 3
+        volumeMounts:
+        - name: logs
+          mountPath: /app/logs
+      volumes:
+      - name: logs
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-fte-backend-service
+  namespace: default
+  labels:
+    app: digital-fte-backend
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  selector:
+    app: digital-fte-backend

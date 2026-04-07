@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: digital-fte-config
+  namespace: default
+data:
+  # Application Configuration
+  app-name: "digital-fte-agent"
+  app-environment: "production"
+  log-level: "INFO"
+
+  # Kafka Configuration
+  kafka-bootstrap-servers: "kafka-service:9092"
+  kafka-topics: "customer-messages,agent-responses,escalations,metrics"
+  kafka-consumer-group: "digital-fte-consumers"
+
+  # Redis Configuration
+  redis-url: "redis-service:6379"
+
+  # OpenAI Configuration
+  openai-model: "gpt-4o"
+  openai-max-tokens: "2000"
+  openai-temperature: "0.7"
+
+  # Agent Configuration
+  agent-escalation-threshold: "3"
+  agent-sentiment-threshold: "0.7"
+  agent-response-timeout: "30"
+
+  # Observability Configuration
+  metrics-enabled: "true"
+  tracing-enabled: "true"
+  correlation-id-enabled: "true"
+
+  # Performance Configuration
+  cache-enabled: "true"
+  cache-ttl: "3600"
+  rate-limit-enabled: "true"
+  rate-limit-requests: "100"
+  rate-limit-window: "60"

@@ -11,7 +11,22 @@
       "Bash(specs/001-digital-fte-agent/plan.md:*)",
       "Bash(.specify/scripts/bash/create-phr.sh:*)",
       "Bash(git init:*)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(docker:*)",
+      "Bash(pip install:*)",
+      "Bash(python:*)",
+      "Bash(PYTHONPATH=/c/Users/a/Desktop/hacthon_5_final/backend python:*)",
+      "Bash(curl:*)",
+      "Bash(taskkill:*)",
+      "Bash(export:*)",
+      "Bash(node:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "Bash(claude task-output:*)",
+      "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
+      "Bash(mkdir:*)",
+      "Bash(sp.analyze:*)",
+      "Bash(pwsh:*)"
     ]
   }
 }

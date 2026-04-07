@@ -1,0 +1,42 @@
+---
+# Service for Celery Workers
+# Internal service for worker metrics and health checks
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-fte-workers-service
+  namespace: default
+  labels:
+    app: digital-fte-workers
+    component: background-worker
+spec:
+  type: ClusterIP
+  selector:
+    app: digital-fte-workers
+  ports:
+  - name: http-metrics
+    port: 8081
+    targetPort: 8081
+    protocol: TCP
+  - name: health
+    port: 9091
+    targetPort: 9091
+    protocol: TCP
+---
+# Headless Service for Celery Workers (for stateful applications)
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-fte-workers-headless
+  namespace: default
+  labels:
+    app: digital-fte-workers
+spec:
+  clusterIP: None
+  selector:
+    app: digital-fte-workers
+  ports:
+  - name: http-metrics
+    port: 8081
+    targetPort: 8081
+    protocol: TCP

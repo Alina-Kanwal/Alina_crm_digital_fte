@@ -1,0 +1,42 @@
+---
+# Service for Kafka Consumers
+# Internal service for consumer metrics and health checks
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-fte-consumers-service
+  namespace: default
+  labels:
+    app: digital-fte-consumers
+    component: message-consumer
+spec:
+  type: ClusterIP
+  selector:
+    app: digital-fte-consumers
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  - name: health
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+---
+# Headless Service for Kafka Consumers (for stateful applications)
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-fte-consumers-headless
+  namespace: default
+  labels:
+    app: digital-fte-consumers
+spec:
+  clusterIP: None
+  selector:
+    app: digital-fte-consumers
+  ports:
+  - name: http-metrics
+    port: 8080
+    targetPort: 8080
+    protocol: TCP

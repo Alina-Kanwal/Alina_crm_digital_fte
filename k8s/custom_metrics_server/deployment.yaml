@@ -1,0 +1,270 @@
+---
+# Custom Metrics Server - Prometheus Adapter
+# Exposes custom metrics from Prometheus to Kubernetes HPA
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: custom-metrics
+---
+# Service Account for Prometheus Adapter
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: custom-metrics-apiserver
+  namespace: custom-metrics
+---
+# Cluster Role for Prometheus Adapter
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: custom-metrics-server-resources
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - pods
+  - namespaces
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - extensions.k8s.io
+  resources:
+  - deployments
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - apps.k8s.io
+  resources:
+  - deployments
+  - daemonsets
+  - replicasets
+  - statefulsets
+  verbs:
+  - get
+  - list
+---
+# Cluster Role Binding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hpa-controller-custom-metrics
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: custom-metrics-server-resources
+subjects:
+- kind: ServiceAccount
+  name: custom-metrics-apiserver
+  namespace: custom-metrics
+---
+# Custom Metrics API Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: api
+  namespace: custom-metrics
+spec:
+  ports:
+  - name: https
+    port: 443
+    targetPort: 443
+  selector:
+    app: custom-metrics-apiserver
+---
+# Deployment for Prometheus Adapter
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: custom-metrics-apiserver
+  name: custom-metrics-apiserver
+  namespace: custom-metrics
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: custom-metrics-apiserver
+  template:
+    metadata:
+      labels:
+        app: custom-metrics-apiserver
+    spec:
+      serviceAccountName: custom-metrics-apiserver
+      containers:
+      - name: custom-metrics-apiserver
+        image: registry.k8s.io/prometheus-adapter/prometheus-adapter:v0.11.1
+        imagePullPolicy: IfNotPresent
+        args:
+        - --secure-port=6443
+        - --tls-cert-file=/var/run/serving-cert/tls.crt
+        - --tls-private-key-file=/var/run/serving-cert/tls.key
+        - --logtostderr=true
+        - --v=4
+        - --prometheus-url=http://prometheus-service.monitoring.svc:9090/
+        - --metrics-relist-interval=30s
+        - --v=4
+        - --rate-interval=30s
+        ports:
+        - containerPort: 6443
+        volumeMounts:
+        - mountPath: /var/run/serving-cert
+          name: volume-serving-cert
+          readOnly: true
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100Mi
+          limits:
+            cpu: 500m
+            memory: 500Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 6443
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 6443
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: volume-serving-cert
+        secret:
+          secretName: cm-adapter-serving-certs
+---
+# APIService for Custom Metrics
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1beta1.custom.metrics.k8s.io
+spec:
+  service:
+    name: api
+    namespace: custom-metrics
+  group: custom.metrics.k8s.io
+  version: v1beta1
+  caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIRENDQWpZS0tLS0tCk1JSURDVENDQWtHZ0F3SUJBZ0lKQUpSdFpFMEtHb1VUTUEwR0NTcUdTSWIzRFFFQkN3VUFNQlF4RWpBUUJnTlYKQkFNTUNXeHZZMkZzYUc5emREQWVGdzB5TkRBeE1URXdNREF3TURCYUZ3MHlOVEF4TURFd01EQXhNVEJhTUJReApFakFRQmdOVkJBTU1HUV4wOGRBMHRDeEhjTkRRd016QTlNRG84TmpNQ01qY3dNd1lEVlFRRERBWnRkbUZzYUc5emRDCmFXUWdRMkZ5WldOMWNtVXRhVzl5TUlJQklqQU5CZ2txaGtpRzl3MEJBUVVGQUFPQ0FnRUFGWjRzZ2l0SWV4c3UKZ0c0d2g4U01xU3JzTTRBZ3Y2d0FpSGhLZDNjUWdVbCtaS3J6Y3VvWXBjWlY3eWxRZz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  groupPriorityMinimum: 100
+  versionPriority: 100
+---
+# APIService for External Metrics
+apiVersion: apiregistration.k8s.io/v1
+kind: APIService
+metadata:
+  name: v1beta1.external.metrics.k8s.io
+spec:
+  service:
+    name: api
+    namespace: custom-metrics
+  group: external.metrics.k8s.io
+  version: v1beta1
+  caBundle: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURIRENDQWpZS0tLS0tCk1JSURDVENDQWtHZ0F3SUJBZ0lKQUpSdFpFMEtHb1VUTUEwR0NTcUdTSWIzRFFFQkN3VUFNQlF4RWpBUUJnTlYKQkFNTUNXeHZZMkZzYUc5emREQWVGdzB5TkRBeE1URXdNREF3TURCYUZ3MHlOVEF4TURFd01EQXhNVEJhTUJReApFakFRQmdOVkJBTU1HUV4wOGRBMHRDeEhjTkRRd016QTlNRG84TmpNQ01qY3dNd1lEVlFRRERBWnRkbUZzYUc5emRDCmFXUWdRMkZ5WldOMWNtVXRhVzl5TUlJQklqQU5CZ2txaGtpRzl3MEJBUVVGQUFPQ0FnRUFGWjRzZ2l0SWV4c3UKZ0c0d2g4U01xU3JzTTRBZ3Y2d0FpSGhLZDNjUWdVbCtaS3J6Y3VvWXBjWlY3eWxRZz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  groupPriorityMinimum: 100
+  versionPriority: 100
+---
+# ConfigMap for Prometheus Adapter Rules
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: adapter-config
+  namespace: custom-metrics
+data:
+  config.yaml: |
+    rules:
+    # Kafka consumer lag metrics
+    - seriesQuery: 'kafka_consumer_lag_messages'
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: "kafka_consumer_lag_messages"
+        as: "kafka_consumer_lag_messages"
+      metricsQuery: 'sum(kafka_consumer_lag_messages{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
+
+    # Kafka consumer group lag
+    - seriesQuery: 'kafka_consumer_group_lag_bytes'
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+      name:
+        matches: "kafka_consumer_group_lag_bytes"
+        as: "kafka_consumer_group_lag_bytes"
+      metricsQuery: 'sum(kafka_consumer_group_lag_bytes{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
+
+    # Celery queue length
+    - seriesQuery: 'celery_queue_length_tasks'
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: "celery_queue_length_tasks"
+        as: "celery_queue_length_tasks"
+      metricsQuery: 'sum(celery_queue_length_tasks{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
+
+    # Celery scheduled tasks pending
+    - seriesQuery: 'celery_scheduled_tasks_pending'
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+      name:
+        matches: "celery_scheduled_tasks_pending"
+        as: "celery_scheduled_tasks_pending"
+      metricsQuery: 'sum(celery_scheduled_tasks_pending{<<.LabelMatchers>>}) by (<<.GroupBy>>)'
+
+    # HTTP request rate
+    - seriesQuery: 'http_requests_total'
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: "http_requests_total"
+        as: "http_requests_per_second"
+      metricsQuery: 'sum(rate(http_requests_total{<<.LabelMatchers>>}[1m])) by (<<.GroupBy>>)'
+
+    # HTTP request latency P95
+    - seriesQuery: 'http_request_duration_seconds_bucket'
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          pod:
+            resource: pod
+      name:
+        matches: "http_request_duration_seconds_bucket"
+        as: "http_request_latency_p95_seconds"
+      metricsQuery: 'histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{<<.LabelMatchers>>}[5m])) by (le, <<.GroupBy>>))'
+---
+# Secret for serving certificates (generated via cert-manager or manual)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cm-adapter-serving-certs
+  namespace: custom-metrics
+type: kubernetes.io/tls
+data:
+  # These should be generated with proper certificates
+  # Use: openssl req -x509 -newkey rsa:2048 -keyout tls.key -out tls.crt -days 365 -nodes -subj "/CN=custom-metrics-apiserver.custom-metrics.svc"
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURJRENDQWlpZ0F3SUJBZ0lKQUpSdFpFMEtHb1VUTUEwR0NTcUdTSWIzRFFFQkN3VUFNQlF4RWpBUUJnTlYKQkFNTUNXeHZZMkZzYUc5emREQWVGdzB5TkRBeE1URXdNREF3TURCYUZ3MHlOVEF4TURFd01EQXhNVEJhTUJReApFakFRQmdOVkJBTU1HUV4wOGRBMHRDeEhjTkRRd016QTlNRG84TmpNQ01qY3dNd1lEVlFRRERBWnRkbUZzYUc5emRDCmFXUWdRMkZ5WldOMWNtVXRhVzl5TUlJQklqQU5CZ2txaGtpRzl3MEJBUVVGQUFPQ0FnRUFGWjRzZ2l0SWV4c3UKZ0c0d2g4U01xU3JzTTRBZ3Y2d0FpSGhLZDNjUWdVbCtaS3J6Y3VvWXBjWlY3eWxRZz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  tls.key: LS0tLS1CRUdJTiBFQyBQUklWQVRFIEtFWS0tLS0tCk1JSUVJZ0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktjd2dnU2pBZ0VBQW9JQkFRQ3Y3QkY4aDJWQjEzV0oKanlKdENaT3pXN1FyT2d5a1N6YjVXemhXSWVqT2lPQ0FRRUEyQkZ4SFFlSGtZMGlzN0JpSmZTUXRkWnZ3SgpnS1V3VmZqTVJ0NzAxcGdEaE1uVzRGV01yY1JjQmdvS2Z3a2pJNjhSOG5iVGd1TWh1VVJyWjZsY05aTEhLQwo0eCtjMWhnT2FkZVZKZ0tLam5oRk5kZjJpK3h2ZU1iU2lYSHFyVm1xWjZsUU5LZEN4SGVnQkZ0VW5wYU5DCjZjVzNMa2h6aW1hMzJwNXZ0ZmJ6eUc0SFlaMldGd3R4Yk5tSWNlM1ZVWk1ZV1dGM0l6WUZBQ1FqZ1NFVWcKUVVRWmVnWXh5T2FkY1hJUT09Ci0tLS0tRU5EIEVDIFBSSVZBVEUgS0VZLS0tLS0K

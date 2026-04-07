@@ -1,0 +1,42 @@
+---
+# Service for Backend API
+# Internal service for API communication
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-fte-backend-service
+  namespace: default
+  labels:
+    app: digital-fte-backend
+    component: api
+spec:
+  type: ClusterIP
+  selector:
+    app: digital-fte-backend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 9090
+    protocol: TCP
+---
+# Headless Service for Backend (for stateful applications)
+apiVersion: v1
+kind: Service
+metadata:
+  name: digital-fte-backend-headless
+  namespace: default
+  labels:
+    app: digital-fte-backend
+spec:
+  clusterIP: None
+  selector:
+    app: digital-fte-backend
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8000
+    protocol: TCP
