@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+// Used native fetch instead of axios
 
 interface SupportFormProps {
   /** Optional endpoint URL - defaults to relative API path */
@@ -129,11 +129,15 @@ const SupportForm: React.FC<SupportFormProps> = ({
     setAiResponse(null);
 
     try {
-      const response = await axios.post<APIResponse>(apiEndpoint, formData, {
+      const res = await fetch(apiEndpoint, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify(formData)
       });
+      const responseData = await res.json();
+      const response = { data: responseData };
 
       if (response.data.success) {
         setSubmitStatus({
