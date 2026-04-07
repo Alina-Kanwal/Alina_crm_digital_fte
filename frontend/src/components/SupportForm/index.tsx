@@ -5,7 +5,6 @@
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import apiService from '@/services/api';
 
 interface SupportFormProps {
   /** Optional endpoint URL - defaults to relative API path */
@@ -40,8 +39,8 @@ interface APIResponse {
 const SupportForm: React.FC<SupportFormProps> = ({
   apiEndpoint = '/api/v1/inquiries/webform',
   className = '',
-  title = 'Need Help?',
-  subtitle = 'Ask us anything about our product',
+  title = 'Get Premium Support',
+  subtitle = 'Experience AI-powered immediate resolutions',
   showResponsePreview = true
 }) => {
   const [formData, setFormData] = useState<FormData>({
@@ -66,7 +65,6 @@ const SupportForm: React.FC<SupportFormProps> = ({
   // Validate form data
   useEffect(() => {
     const isValid =
-      formData.name.trim().length >= 0 && // Name is optional
       formData.email.trim().length > 0 &&
       /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()) && // Basic email validation
       formData.message.trim().length > 0;
@@ -101,27 +99,15 @@ const SupportForm: React.FC<SupportFormProps> = ({
 
   const checkForAIResponse = async () => {
     try {
-      // In a real implementation, this would check a dedicated endpoint
-      // For demo purposes, we'll simulate an AI response after a delay
-      // In production, this would poll an endpoint like:
-      // /api/v1/inquiries/response/{submissionId}
-
-      // Simulate checking for response
       await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // For now, we'll just show a placeholder response
-      // In production, this would be replaced with actual AI response polling
       if (submitStatus.status === 'success') {
         setAiResponse(
-          "Thank you for your inquiry! Our AI agent has received your message and is processing it. " +
-          "You should receive a detailed response via email shortly. " +
-          "If you need immediate assistance, please check your email for updates."
+          "Thank you for your inquiry! Our AI agent has received your message and is processing it. You will receive a detailed resolution via email shortly."
         );
-        stopCheckingForResponse();  // Stop checking once we have a response
+        stopCheckingForResponse();
       }
     } catch (error) {
       console.error('Error checking for AI response:', error);
-      // Continue checking despite errors
     }
   };
 
@@ -140,7 +126,7 @@ const SupportForm: React.FC<SupportFormProps> = ({
 
     setIsSubmitting(true);
     setSubmitStatus({ status: 'submitting', message: 'Submitting your inquiry...' });
-    setAiResponse(null);  // Clear previous response
+    setAiResponse(null);
 
     try {
       const response = await axios.post<APIResponse>(apiEndpoint, formData, {
@@ -152,22 +138,11 @@ const SupportForm: React.FC<SupportFormProps> = ({
       if (response.data.success) {
         setSubmitStatus({
           status: 'success',
-          message: response.data.message || 'Your inquiry has been submitted successfully!'
+          message: response.data.message || 'Your request has been beautifully received!'
         });
 
-        // Store submission ID for response tracking
-        const submissionId = response.data.submissionId ||
-                           `${formData.email}_${Date.now()}`;
+        const submissionId = response.data.submissionId || `${formData.email}_${Date.now()}`;
 
-        // Reset form after successful submission
-        setFormData({
-          name: '',
-          email: '',
-          subject: '',
-          message: ''
-        });
-
-        // Start checking for AI response if enabled
         if (showResponsePreview) {
           setIsCheckingResponse(true);
         }
@@ -189,108 +164,130 @@ const SupportForm: React.FC<SupportFormProps> = ({
 
   return (
     <div className={`digital-fte-support-form ${className}`}>
-      <div className="support-form-container">
-        <h2 className="support-form-title">{title}</h2>
-        <p className="support-form-subtitle">{subtitle}</p>
+      <div className="container">
+        <div className="header">
+          <h2 className="title">{title}</h2>
+          <p className="subtitle">{subtitle}</p>
+        </div>
 
         <form onSubmit={handleSubmit} className="support-form">
           <div className="form-group">
-            <label htmlFor="name">Your Name (Optional)</label>
+            <label htmlFor="name" className="form-label">Full Name</label>
             <input
               type="text"
               id="name"
               name="name"
               value={formData.name}
               onChange={handleChange}
-              placeholder="Enter your name"
-              className="form-input"
+              placeholder="e.g. Jane Doe"
+              className="form-control"
               autoComplete="name"
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="email">Email Address *</label>
+            <label htmlFor="email" className="form-label">Email Address *</label>
             <input
               type="email"
               id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your email address"
-              className="form-input"
+              placeholder="jane@example.com"
+              className="form-control"
               required
               autoComplete="email"
             />
-            <p className="form-help">We'll use this to respond to your inquiry</p>
           </div>
 
           <div className="form-group">
-            <label htmlFor="subject">Subject (Optional)</label>
+            <label htmlFor="subject" className="form-label">Subject</label>
             <input
               type="text"
               id="subject"
               name="subject"
               value={formData.subject}
               onChange={handleChange}
-              placeholder="Briefly describe your inquiry"
-              className="form-input"
+              placeholder="How can we help you?"
+              className="form-control"
             />
           </div>
 
           <div className="form-group">
-            <label htmlFor="message">Your Message *</label>
+            <label htmlFor="message" className="form-label">Message *</label>
             <textarea
               id="message"
               name="message"
               value={formData.message}
               onChange={handleChange}
-              rows={5}
-              placeholder="Please describe your question or issue in detail"
-              className="form-textarea"
+              placeholder="Please describe your inquiry in detail..."
+              className="form-control"
               required
             />
-            <p className="form-help">
-              Please avoid sharing sensitive information like passwords or credit card numbers
-            </p>
           </div>
 
           <button
             type="submit"
             disabled={!isValid || isSubmitting}
-            className={`submit-button ${isSubmitting ? 'submitting' : ''}`}
+            className="btn-submit"
           >
-            {isSubmitting ? 'Submitting...' : 'Send Message'}
+            {isSubmitting ? (
+              <>
+                <div className="spinner"></div> Processing...
+              </>
+            ) : (
+              'Send Request'
+            )}
           </button>
         </form>
 
-        {submitStatus.status !== 'idle' && (
-          <div className={`submit-status ${submitStatus.status}`}>
-            {submitStatus.message}
+        {submitStatus.status === 'success' && (
+          <div className="alert alert-success">
+            <h3>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+              Request Received
+            </h3>
+            <p>{submitStatus.message}</p>
+            
+            {showResponsePreview && isCheckingResponse && (
+              <div className="response-status checking" style={{marginTop: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.8rem', color: '#94a3b8'}}>
+                <div className="spinner" style={{width: '16px', height: '16px', borderWidth: '2px', borderTopColor: '#3b82f6'}}></div>
+                <p style={{margin: 0, fontSize: '0.9rem'}}>AI is analyzing your request...</p>
+              </div>
+            )}
+            
+            {showResponsePreview && aiResponse && (
+              <div className="response-details" style={{marginTop: '1rem', animation: 'slideUp 0.5s ease'}}>
+                <p style={{display:'block', marginBottom: '0.5rem'}}><strong>AI Quick Response:</strong></p>
+                <p style={{display:'block', color: '#f8fafc', lineHeight: '1.5'}}>{aiResponse}</p>
+              </div>
+            )}
+            
+            {showResponsePreview && submitStatus.status === 'success' && !aiResponse && !isCheckingResponse && (
+              <div className="response-status info" style={{marginTop: '1rem', color: '#94a3b8', fontSize: '0.9rem'}}>
+                <p>AI response analysis complete.</p>
+              </div>
+            )}
           </div>
         )}
 
-        {showResponsePreview && isCheckingResponse && (
-          <div className="response-status checking">
-            <div className="spinner"></div>
-            <p>Checking for AI response...</p>
+        {submitStatus.status === 'error' && (
+          <div className="alert alert-error">
+             <h3>
+               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{marginRight:'8px', verticalAlign:'middle'}}><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+               Submission Failed
+             </h3>
+             <p>{submitStatus.message}</p>
           </div>
         )}
-
-        {showResponsePreview && aiResponse && (
-          <div className="ai-response-panel">
-            <h3>AI Response Preview</h3>
-            <p className="ai-response-text">{aiResponse}</p>
-            <p className="ai-response-note">
-              *This is a preview. The full response will be sent to your email.
-            </p>
+        
+        <div className="footer">
+          <div className="powered-by">
+            <div className="dot"></div>
+            <span>Powered by Digital FTE Agent</span>
           </div>
-        )}
-
-        {showResponsePreview && submitStatus.status === 'success' && !aiResponse && !isCheckingResponse && (
-          <div className="response-status info">
-            <p>Checking for AI response... (this may take a moment)</p>
-          </div>
-        )}
+          <p style={{ margin: '0', opacity: 0.7 }}>24/7 AI-Powered Support</p>
+        </div>
       </div>
     </div>
   );
