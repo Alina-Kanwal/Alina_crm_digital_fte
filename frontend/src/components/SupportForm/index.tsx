@@ -1,7 +1,7 @@
-"""
-Embeddable React/Next.js web support form for Digital FTE AI Customer Success Agent.
-Provides a standalone, embeddable support form for customer inquiries with real-time response display.
-"""
+/**
+ * Embeddable React/Next.js web support form for Digital FTE AI Customer Success Agent.
+ * Provides a standalone, embeddable support form for customer inquiries with real-time response display.
+ */
 
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -102,15 +102,15 @@ const SupportForm: React.FC<SupportFormProps> = ({
   const checkForAIResponse = async () => {
     try {
       // In a real implementation, this would check a dedicated endpoint
-      # For demo purposes, we'll simulate an AI response after a delay
-      # In production, this would poll an endpoint like:
-      # /api/v1/inquiries/response/{submissionId}
+      // For demo purposes, we'll simulate an AI response after a delay
+      // In production, this would poll an endpoint like:
+      // /api/v1/inquiries/response/{submissionId}
 
       // Simulate checking for response
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      # For now, we'll just show a placeholder response
-      # In production, this would be replaced with actual AI response polling
+      // For now, we'll just show a placeholder response
+      // In production, this would be replaced with actual AI response polling
       if (submitStatus.status === 'success') {
         setAiResponse(
           "Thank you for your inquiry! Our AI agent has received your message and is processing it. " +
@@ -121,7 +121,7 @@ const SupportForm: React.FC<SupportFormProps> = ({
       }
     } catch (error) {
       console.error('Error checking for AI response:', error);
-      # Continue checking despite errors
+      // Continue checking despite errors
     }
   };
 
@@ -155,11 +155,11 @@ const SupportForm: React.FC<SupportFormProps> = ({
           message: response.data.message || 'Your inquiry has been submitted successfully!'
         });
 
-        # Store submission ID for response tracking
+        // Store submission ID for response tracking
         const submissionId = response.data.submissionId ||
                            `${formData.email}_${Date.now()}`;
 
-        # Reset form after successful submission
+        // Reset form after successful submission
         setFormData({
           name: '',
           email: '',
@@ -167,7 +167,7 @@ const SupportForm: React.FC<SupportFormProps> = ({
           message: ''
         });
 
-        # Start checking for AI response if enabled
+        // Start checking for AI response if enabled
         if (showResponsePreview) {
           setIsCheckingResponse(true);
         }
