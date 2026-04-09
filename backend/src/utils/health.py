@@ -58,7 +58,6 @@ class HealthChecker:
     - Database connectivity
     - Cache connectivity
     - External API health (OpenAI, Gmail, Twilio)
-    - Message queue health (Kafka)
     - Celery worker status
     """
 
@@ -168,44 +167,6 @@ class HealthChecker:
 
         return result
 
-    async def check_kafka(self, kafka_producer=None) -> HealthCheckResult:
-        """
-        Check Kafka connectivity.
-
-        Args:
-            kafka_producer: Kafka producer (optional)
-
-        Returns:
-            Health check result
-        """
-        start_time = datetime.now()
-
-        try:
-            if kafka_producer:
-                # Check Kafka producer is ready
-                kafka_producer.bootstrap_connected()
-
-            duration_ms = (datetime.now() - start_time).total_seconds() * 1000
-
-            result = HealthCheckResult(
-                name="kafka",
-                status=HealthStatus.HEALTHY,
-                message="Kafka connection successful",
-                duration_ms=duration_ms
-            )
-
-        except Exception as e:
-            duration_ms = (datetime.now() - start_time).total_seconds() * 1000
-
-            result = HealthCheckResult(
-                name="kafka",
-                status=HealthStatus.UNHEALTHY,
-                message=f"Kafka connection failed: {str(e)}",
-                duration_ms=duration_ms
-            )
-            logger.error(f"Kafka health check failed: {e}")
-
-        return result
 
     async def check_openai(self, openai_client=None) -> HealthCheckResult:
         """
@@ -367,7 +328,6 @@ class HealthChecker:
         self,
         db_client=None,
         cache_client=None,
-        kafka_producer=None,
         openai_client=None,
         gmail_service=None,
         twilio_client=None
@@ -378,7 +338,6 @@ class HealthChecker:
         Args:
             db_client: Database client
             cache_client: Cache client
-            kafka_producer: Kafka producer
             openai_client: OpenAI client
             gmail_service: Gmail service
             twilio_client: Twilio client
@@ -388,9 +347,7 @@ class HealthChecker:
         """
         checks = []
 
-        # Run critical checks first
         checks.append(await self.check_database(db_client))
-        checks.append(await self.check_kafka(kafka_producer))
 
         # Run non-critical checks in parallel
         results = await asyncio.gather(
@@ -479,11 +436,8 @@ def create_health_check_router() -> APIRouter:
 
         # Run critical checks only
         db_result = await checker.check_database()
-        kafka_result = await checker.check_kafka()
 
-        # Determine status
-        if (db_result.status == HealthStatus.UNHEALTHY or
-            kafka_result.status == HealthStatus.UNHEALTHY):
+        if db_result.status == HealthStatus.UNHEALTHY:
             overall_status = HealthStatus.UNHEALTHY
         else:
             overall_status = HealthStatus.HEALTHY
@@ -491,7 +445,7 @@ def create_health_check_router() -> APIRouter:
         return HealthCheckResponse(
             status=overall_status,
             version=checker.app_version,
-            checks=[db_result, kafka_result],
+            checks=[db_result],
             uptime_seconds=checker._calculate_uptime()
         )
 

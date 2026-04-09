@@ -1,6 +1,7 @@
 # Core Framework
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
+gunicorn==21.2.0
 
 # AI/ML
 openai-agents==0.0.14
@@ -9,12 +10,11 @@ litellm==1.40.0
 
 # Database
 psycopg2-binary==2.9.9
+asyncpg==0.29.0
 sqlalchemy==2.0.23
 alembic==1.13.1
 pgvector==0.2.0
 
-# Message Queue
-kafka-python==2.0.2
 
 # NLP & Processing
 python-dotenv==1.0.0

@@ -10,6 +10,7 @@ Production-grade setup with:
 """
 import os
 import logging
+import asyncio
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Request, Response
@@ -65,8 +66,6 @@ from src.middleware.logging import configure_logging
 # Configure database
 from src.database.connection import init_db, close_db, check_db_health
 
-# Configure Kafka
-from src.kafka import get_producer
 
 # Initialize structured logging
 configure_logging()
@@ -162,16 +161,10 @@ async def lifespan(app: FastAPI):
         logger.error(f"Failed to initialize database: {e}")
         raise
 
-    # Initialize Kafka producer
-    try:
-        producer = get_producer()
-        if producer:
-            logger.info("Kafka producer initialized successfully")
-        else:
-            logger.warning("Kafka producer not available (continuing without)")
-    except Exception as e:
-        logger.error(f"Failed to initialize Kafka producer: {e}")
-        # Continue without Kafka - some features may not work
+
+    # 🚀 Start Digital FTE Living Agent (24/7 Autonomous Brain)
+    from src.services.living_agent import living_agent
+    asyncio.create_task(living_agent.start_working_247())
 
     logger.info("Digital FTE Agent API startup complete")
 
@@ -181,11 +174,6 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down Digital FTE Agent API...")
     await close_db()
 
-    # Flush Kafka producer
-    producer = get_producer()
-    if producer:
-        producer.close()
-        logger.info("Kafka producer closed")
 
     logger.info("Digital FTE Agent API shutdown complete")
 
@@ -210,15 +198,11 @@ async def readiness_probe():
 
     Checks:
     - Database connection
-    - Kafka producer (optional)
     """
     checks = {
         "database": "ready" if check_db_health() else "not_ready",
     }
 
-    # Check Kafka producer (optional)
-    producer = get_producer()
-    checks["kafka"] = "ready" if producer else "not_configured"
 
     # Overall status
     all_ready = all(status == "ready" for status in checks.values())
@@ -262,11 +246,12 @@ async def root():
     }
 
 # API v1 routers
-from src.api import inquiries, tickets, reports, escalation
+from src.api import inquiries, tickets, reports, escalation, crm
 app.include_router(inquiries.router, prefix="/api/v1/inquiries", tags=["inquiries"])
 app.include_router(tickets.router, prefix="/api/v1/tickets", tags=["tickets"])
 app.include_router(reports.router, prefix="/api/v1/reports", tags=["reports"])
-app.include_router(escalation.router, prefix="/api/v1", tags=["escalation"])
+app.include_router(escalation.router, prefix="/api/v1/escalation", tags=["escalation"])
+app.include_router(crm.router, prefix="/api/v1/crm", tags=["crm"])
 
 # Expose Prometheus ASGI app for metrics scraping
 metrics_app = make_asgi_app()
