@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: Alina_crm_digital_fte
+    env: python
+    region: singapore
+    branch: 001-digital-fte-agent
+    rootDir: backend
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "uvicorn src.main:app --host 0.0.0.0 --port $PORT"
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        value: postgresql://neondb_owner:npg_jcNGEM0ghA3n@ep-cool-math-anbou7jb-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+      - key: ENVIRONMENT
+        value: production
