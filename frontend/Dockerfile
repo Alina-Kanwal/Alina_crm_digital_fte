@@ -9,8 +9,8 @@ WORKDIR /app
 # Copy package files
 COPY frontend/package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production --prefer-offline
+# Install dependencies (including devDependencies for build)
+RUN npm ci --prefer-offline
 
 # Stage 2: Builder
 FROM node:18-alpine AS builder
