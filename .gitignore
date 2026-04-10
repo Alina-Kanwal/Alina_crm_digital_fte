@@ -100,3 +100,4 @@ benchmark/
 test.db
 test_output.txt
 *.backup
+.vercel
