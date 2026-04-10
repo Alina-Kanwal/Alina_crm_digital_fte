@@ -48,7 +48,9 @@ services:
     environment:
       DATABASE_URL: postgresql://digital_fte:\${POSTGRES_PASSWORD:-changeme}@postgres:5432/digital_fte
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      REDIS_URL: redis://localhost:6379/0
+      REDIS_URL: redis://redis:6379/0
+    env_file:
+      - .env
     ports:
       - "8000:8000"
 

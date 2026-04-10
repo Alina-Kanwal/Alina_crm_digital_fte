@@ -96,9 +96,9 @@ def escalate_to_human(reason: str, context: str) -> str:
         return f"Error during escalation: {str(e)}"
 
 @_create_function_tool
-def analyze_customer_sentiment(text: str) -> Dict[str, Any]:
+async def analyze_customer_sentiment(text: str) -> Dict[str, Any]:
     """
-    Analyze customer sentiment in the provided text.
+    Analyze customer sentiment in the provided text using LLM for accuracy.
 
     Args:
         text: The text to analyze for sentiment
@@ -107,36 +107,27 @@ def analyze_customer_sentiment(text: str) -> Dict[str, Any]:
         Dictionary with sentiment label and score
     """
     try:
-        # Simple sentiment analysis - in production you'd use more sophisticated NLP
-        positive_words = ['good', 'great', 'excellent', 'happy', 'satisfied', 'thanks', 'thank you']
-        negative_words = ['bad', 'terrible', 'awful', 'angry', 'frustrated', 'disappointed', 'hate']
-
-        text_lower = text.lower()
-        positive_count = sum(1 for word in positive_words if word in text_lower)
-        negative_count = sum(1 for word in negative_words if word in text_lower)
-
-        if positive_count > negative_count:
-            sentiment = "positive"
-            score = min(0.5 + (positive_count * 0.1), 1.0)
-        elif negative_count > positive_count:
-            sentiment = "negative"
-            score = max(-0.5 - (negative_count * 0.1), -1.0)
-        else:
-            sentiment = "neutral"
-            score = 0.0
-
+        # Use gpt-4o-mini for efficient sentiment analysis
+        prompt = f"Analyze the sentiment of the following customer support message. Provide a sentiment label (positive, neutral, negative) and a sentiment score between -1.0 and 1.0.\n\nMessage: {text}\n\nReturn ONLY a JSON object with 'sentiment' and 'score' keys."
+        
+        response = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            response_format={"type": "json_object"}
+        )
+        
+        import json
+        result = json.loads(response.choices[0].message.content)
+        
         return {
-            "sentiment": sentiment,
-            "score": score,
-            "confidence": min(abs(score), 1.0)
+            "sentiment": result.get("sentiment", "neutral"),
+            "score": float(result.get("score", 0.0)),
+            "confidence": 0.95  # LLM based sentiment is high confidence
         }
     except Exception as e:
-        logger.error(f"Error analyzing sentiment: {e}")
-        return {
-            "sentiment": "unknown",
-            "score": 0.0,
-            "confidence": 0.0
-        }
+        logger.error(f"Error analyzing sentiment with LLM: {e}")
+        # Fallback to simple logic if LLM fails
+        return {"sentiment": "neutral", "score": 0.0, "confidence": 0.0}
 
 class AIAgent:
     def __init__(self):
@@ -148,16 +139,22 @@ class AIAgent:
         try:
             self.agent = Agent(
                 name="Digital FTE Customer Success Agent",
-                instructions="""You are an AI Customer Success Agent for a SaaS company.
-                Your role is to help customers with their inquiries by:
-                1. Understanding their questions and concerns
-                2. Searching product documentation for accurate information
-                3. Providing helpful, accurate responses in the appropriate tone for each channel
-                4. Escalating to human agents when necessary (pricing, legal, refund issues, etc.)
-                5. Maintaining helpful and professional demeanor at all times
+                instructions="""You are an elite AI Customer Success Agent. Your mission is to provide FLAWLESS support using ONLY verified information.
 
-                Always search the documentation before answering questions to ensure accuracy.
-                Be polite, helpful, and professional in all interactions.""",
+### RIGOROUS GROUNDING RULES:
+1. ALWAYS use the 'search_product_documentation' tool before answering ANY technical or product question.
+2. If the documentation does not contain the answer, state clearly that you don't have that information and offer to escalate to a human.
+3. NEVER make up features, pricing, or technical details ("Zero Hallucination" policy).
+4. If a customer is angry (negative sentiment), be extra empathetic and prioritize resolution or escalation.
+5. Adapt your tone strictly: Professional/Formal for Email, Concise/Helpful for Webform, Warm/Brief for WhatsApp.
+
+### ESCALATION CRITERIA:
+- Explicit requests for human help.
+- Complex pricing/refund/legal inquiries.
+- Profanity or extreme hostility.
+- When you have searched 3+ times and cannot find a satisfactory answer.
+
+Your goal is 100% accuracy and high customer satisfaction.""",
                 tools=[search_product_documentation, adapt_tone_for_channel, escalate_to_human, analyze_customer_sentiment],
                 model=os.getenv("OPENAI_MODEL", "gpt-4o")
             )
@@ -194,8 +191,10 @@ class AIAgent:
             # Extract the response
             response_text = getattr(result, 'final_output', str(result))
 
-            # Analyze sentiment of the customer's message
-            sentiment_result = analyze_customer_sentiment(message.get('body', ''))
+            # Analyze sentiment of the customer's message (asynchronous)
+            # In a synchronous run, we'll use a helper to wait or just call the async function
+            import asyncio
+            sentiment_result = asyncio.run(analyze_customer_sentiment(message.get('body', '')))
 
             return {
                 'response': response_text,

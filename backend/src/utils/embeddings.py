@@ -1,91 +1,28 @@
-"""
-pgvector embedding generation and similarity search utilities.
-
-This module provides functions for generating embeddings using OpenAI
-and performing similarity search with PostgreSQL pgvector extension.
-"""
-
 import os
+import litellm
 from typing import List, Optional, Tuple
 import numpy as np
 
-# OpenAI client for embeddings
-try:
-    from openai import AsyncOpenAI, OpenAI
-    OPENAI_AVAILABLE = True
-except ImportError:
-    OPENAI_AVAILABLE = False
-    AsyncOpenAI = None
-    OpenAI = None
-
-# Configuration
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-OPENAI_BASE_URL = os.getenv("OPENAI_BASE_URL")
-EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "text-embedding-3-small")
-EMBEDDING_DIMENSIONS = 1536
-
-
-def get_openai_client() -> Optional[OpenAI]:
-    """
-    Get synchronous OpenAI client.
-    """
-    if not OPENAI_AVAILABLE or not OPENAI_API_KEY:
-        return None
-    return OpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
-
-
-async def get_async_openai_client() -> Optional[AsyncOpenAI]:
-    """
-    Get asynchronous OpenAI client.
-    """
-    if not OPENAI_AVAILABLE or not OPENAI_API_KEY:
-        return None
-    return AsyncOpenAI(api_key=OPENAI_API_KEY, base_url=OPENAI_BASE_URL)
-
-
 async def generate_embedding(text: str) -> Optional[List[float]]:
-    """
-    Generate embedding for text using OpenAI.
-
-    Args:
-        text: Text to generate embedding for
-
-    Returns:
-        List of float values representing the embedding, or None if failed
-    """
-    client = await get_async_openai_client()
-    if not client:
-        return None
-
+    """Generate embedding using LiteLLM (supports multi-provider)."""
     try:
-        response = await client.embeddings.create(
-            model=EMBEDDING_MODEL,
-            input=text,
+        model = os.getenv("EMBEDDING_MODEL", "openai/text-embedding-3-small")
+        response = await litellm.aembedding(
+            model=model,
+            input=[text]
         )
         return response.data[0].embedding
     except Exception as e:
         print(f"Error generating embedding: {e}")
         return None
 
-
 async def generate_embeddings_batch(texts: List[str]) -> List[Optional[List[float]]]:
-    """
-    Generate embeddings for multiple texts.
-
-    Args:
-        texts: List of texts to generate embeddings for
-
-    Returns:
-        List of embeddings (or None for failed generations)
-    """
-    client = await get_async_openai_client()
-    if not client:
-        return [None] * len(texts)
-
+    """Generate embeddings for multiple texts using LiteLLM."""
     try:
-        response = await client.embeddings.create(
-            model=EMBEDDING_MODEL,
-            input=texts,
+        model = os.getenv("EMBEDDING_MODEL", "openai/text-embedding-3-small")
+        response = await litellm.aembedding(
+            model=model,
+            input=texts
         )
         return [item.embedding for item in response.data]
     except Exception as e:

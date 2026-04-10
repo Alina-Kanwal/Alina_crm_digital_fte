@@ -67,11 +67,18 @@ RUN mkdir -p /app/logs /app/tmp && \
 USER appuser
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8000/health/liveness', timeout=5)"
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+    CMD curl -f http://localhost:8000/health/live || exit 1
 
 # Expose port
 EXPOSE 8000
 
-# Run application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "4", "--access-log", "-", "--error-log", "-", "--log-level", "info"]
+# Run application using Gunicorn for production process management
+CMD ["gunicorn", "src.main:app", \\
+     "--workers", "4", \\
+     "--worker-class", "uvicorn.workers.UvicornWorker", \\
+     "--bind", "0.0.0.0:8000", \\
+     "--access-logfile", "-", \\
+     "--error-logfile", "-", \\
+     "--log-level", "info", \\
+     "--timeout", "120"]

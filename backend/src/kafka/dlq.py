@@ -10,12 +10,13 @@ import logging
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Import models
 from src.models.base import Base
 from src.database.connection import get_async_db_session
+from src.models.dlq_entry import DLQEntry
 
 logger = logging.getLogger(__name__)
 
@@ -55,24 +56,19 @@ class DeadLetterQueue:
         Returns:
             str: DLQ entry ID
         """
-        # Create DLQ record
-        dlq_entry = {
-            "original_topic": original_topic,
-            "message_content": json.dumps(message) if not isinstance(message, str) else message,
-            "error_reason": error_reason,
-            "stack_trace": stack_trace,
-            "metadata": metadata or {},
-            "retry_count": 0,
-            "status": "pending",
-            "created_at": datetime.utcnow().isoformat(),
-            "last_attempt_at": datetime.utcnow().isoformat(),
-        }
-
-        # TODO: Store in database once DLQ model is created
-        # For now, just log it
-        logger.warning(f"DLQ entry created: {dlq_entry}")
-
-        return "dlq-temp-id"  # Return temp ID
+        new_entry = DLQEntry(
+            original_topic=original_topic,
+            message_content=json.dumps(message) if not isinstance(message, str) else message,
+            error_reason=error_reason,
+            stack_trace=stack_trace,
+            metadata_json=metadata or {},
+            status="pending"
+        )
+        session.add(new_entry)
+        await session.flush()
+        
+        logger.warning(f"DLQ entry created: {new_entry.id}")
+        return str(new_entry.id)
 
     @staticmethod
     async def get_pending_messages(
@@ -93,10 +89,27 @@ class DeadLetterQueue:
         Returns:
             List of DLQ entries
         """
-        # TODO: Query from database once DLQ model is created
-        # For now, return empty list
-        logger.debug(f"Fetching pending DLQ messages: topic={topic}, max_retries={max_retries}")
-        return []
+        stmt = (
+            select(DLQEntry)
+            .where(DLQEntry.status == "pending")
+            .where(DLQEntry.retry_count < max_retries)
+            .limit(batch_size)
+        )
+        if topic:
+            stmt = stmt.where(DLQEntry.original_topic == topic)
+            
+        result = await session.execute(stmt)
+        entries = result.scalars().all()
+        
+        return [
+            {
+                "id": e.id,
+                "original_topic": e.original_topic,
+                "message_content": e.message_content,
+                "error_reason": e.error_reason,
+                "retry_count": e.retry_count,
+            } for e in entries
+        ]
 
     @staticmethod
     async def update_retry_count(
@@ -114,18 +127,25 @@ class DeadLetterQueue:
             success: Whether retry was successful
             error_reason: New error reason if failed again
         """
-        if success:
-            # Mark as resolved
-            status = "resolved"
-            new_retry_count = 0  # Will be cleared by DB trigger
-            logger.info(f"DLQ entry {dlq_id} marked as resolved")
-        else:
+        from sqlalchemy import update
+        status = "resolved" if success else "pending"
+        
+        stmt = (
+            update(DLQEntry)
+            .where(DLQEntry.id == dlq_id)
+            .values(
+                status=status,
+                last_attempt_at=func.now()
+            )
+        )
+        
+        if not success:
             # Increment retry count
-            status = "pending"
-            new_retry_count = 1  # Will be incremented by DB
-            logger.warning(f"DLQ entry {dlq_id} retry failed: {error_reason}")
+            stmt = stmt.values(retry_count=DLQEntry.retry_count + 1)
+            if error_reason:
+                stmt = stmt.values(error_reason=error_reason)
 
-        # TODO: Update in database once DLQ model is created
+        await session.execute(stmt)
         logger.debug(f"DLQ entry {dlq_id} updated: status={status}")
 
     @staticmethod

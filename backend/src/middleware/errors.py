@@ -70,7 +70,9 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class ErrorHandlerMiddleware:
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class ErrorHandlerMiddleware(BaseHTTPMiddleware):
     """
     Centralized error handling middleware.
 
@@ -84,84 +86,62 @@ class ErrorHandlerMiddleware:
         Args:
             app: FastAPI application
         """
-        self.app = app
+        super().__init__(app)
 
-    async def __call__(self, scope, receive, send):
-        # Handle ASGI interface
-        if isinstance(scope, dict) and callable(receive) and callable(send):
-            # Import here to avoid circular imports
-            from starlette.requests import Request
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
+        """
+        Process request and handle any exceptions.
 
-            request = Request(scope, receive)
+        Args:
+            request: Incoming request
+            call_next: Next middleware or route handler
 
-            try:
-                # Call the next middleware/app in the chain
-                await self.app(scope, receive, send)
-                return
-            except HTTPException as exc:
-                # Create a proper ASGI response for HTTP exceptions
-                from starlette.responses import Response
-                import json
-
-                # Get correlation ID
-                correlation_id = self._get_correlation_id_from_scope(scope)
-
-                # Prepare error response
-                error_content = {
-                    "error": {
-                        "type": "http_error",
-                        "code": exc.status_code,
-                        "message": exc.detail,
-                        "correlation_id": correlation_id,
-                    }
+        Returns:
+            Standardized error response or successful response
+        """
+        try:
+            return await call_next(request)
+        except HTTPException as exc:
+            # Prepare error response
+            correlation_id = getattr(request.state, "correlation_id", "unknown")
+            error_content = {
+                "error": {
+                    "type": "http_error",
+                    "code": exc.status_code,
+                    "message": exc.detail,
+                    "correlation_id": correlation_id,
                 }
+            }
+            return JSONResponse(
+                status_code=exc.status_code,
+                content=error_content
+            )
+        except Exception as exc:
+            # Get correlation ID
+            correlation_id = getattr(request.state, "correlation_id", "unknown")
+            logger.error(f"Unhandled exception [{correlation_id}]: {exc}", exc_info=True)
 
-                response = Response(
-                    content=json.dumps(error_content),
-                    status_code=exc.status_code,
-                    media_type="application/json"
-                )
+            # Don't expose internal error details in production
+            is_production = os.getenv("ENVIRONMENT", "production").lower() == "production"
+            error_message = (
+                "An internal server error occurred"
+                if is_production
+                else str(exc)
+            )
 
-                await response(scope, receive, send)
-                return
-            except Exception as exc:
-                # Create a proper ASGI response for general exceptions
-                from starlette.responses import Response
-                import json
-                import os
-
-                # Get correlation ID
-                correlation_id = self._get_correlation_id_from_scope(scope)
-
-                # Don't expose internal error details in production
-                is_production = os.getenv("ENVIRONMENT", "development").lower() == "production"
-                error_message = (
-                    "An internal server error occurred"
-                    if is_production
-                    else str(exc)
-                )
-
-                # Prepare error response
-                error_content = {
-                    "error": {
-                        "type": "internal_error",
-                        "code": 500,
-                        "message": error_message,
-                        "correlation_id": correlation_id,
-                    }
+            # Prepare error response
+            error_content = {
+                "error": {
+                    "type": "internal_error",
+                    "code": 500,
+                    "message": error_message,
+                    "correlation_id": correlation_id,
                 }
-
-                response = Response(
-                    content=json.dumps(error_content),
-                    status_code=500,
-                    media_type="application/json"
-                )
-
-                await response(scope, receive, send)
-                return
-        else:
-            # Legacy fallback - this should not happen in normal operation
-            raise ValueError("Invalid ASGI interface")
+            }
+            return JSONResponse(
+                status_code=500,
+                content=error_content
+            )
 
     def _get_correlation_id_from_scope(self, scope):
         """Extract correlation ID from ASGI scope."""

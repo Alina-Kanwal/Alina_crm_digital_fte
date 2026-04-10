@@ -10,9 +10,10 @@ import logging
 import logging.config
 import sys
 import json
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Callable
 from datetime import datetime
 from contextvars import ContextVar
+from starlette.middleware.base import BaseHTTPMiddleware
 
 # Try to import FastAPI types, fallback to mock if not available
 try:
@@ -167,7 +168,7 @@ def configure_logging(
     logging.info(f"Logging configured: level={level}, format={format_type}")
 
 
-class LoggingMiddleware:
+class LoggingMiddleware(BaseHTTPMiddleware):
     """
     FastAPI middleware for request/response logging.
 
@@ -181,79 +182,10 @@ class LoggingMiddleware:
         Args:
             app: FastAPI application
         """
-        self.app = app
+        super().__init__(app)
         self.logger = logging.getLogger("api.requests")
 
-    async def __call__(self, scope, receive, send):
-        # Handle ASGI interface
-        if isinstance(scope, dict) and callable(receive) and callable(send):
-            # Import here to avoid circular imports
-            from starlette.requests import Request
-
-            request = Request(scope, receive)
-
-            # Get correlation ID
-            correlation_id = self._get_correlation_id_from_scope(scope)
-
-            # Log request
-            self.logger.info(
-                "Request received",
-                extra={
-                    "props": {
-                        "method": request.method,
-                        "path": request.url.path,
-                        "query_params": str(request.url.query),
-                        "client_host": request.client.host if request.client else None,
-                    }
-                },
-            )
-
-            # Process request
-            try:
-                # Call the next middleware/app in the chain
-                await self.app(scope, receive, send)
-                return
-            except Exception as e:
-                # Log error
-                self.logger.error(
-                    "Request failed",
-                    exc_info=True,
-                    extra={
-                        "props": {
-                            "error_type": type(e).__name__,
-                            "error_message": str(e),
-                        }
-                    },
-                )
-                # Re-raise to let error handling middleware deal with it
-                raise
-        else:
-            # Legacy fallback - this should not happen in normal operation
-            raise ValueError("Invalid ASGI interface")
-
-    def _get_correlation_id_from_scope(self, scope):
-        """Extract correlation ID from ASGI scope."""
-        try:
-            # Look for correlation ID in scope state or headers
-            headers = dict(scope.get("headers", []))
-            # Convert byte keys/values to strings
-            headers = {k.decode("latin-1") if isinstance(k, bytes) else k:
-                      v.decode("latin-1") if isinstance(v, bytes) else v
-                      for k, v in headers.items()}
-
-            # Look for correlation ID in headers
-            correlation_id = headers.get("x-correlation-id")
-            if correlation_id:
-                return correlation_id
-
-            # Alternative header names
-            correlation_id = headers.get("correlationid")
-            if correlation_id:
-                return correlation_id
-
-            return "unknown"
-        except Exception:
-            return "unknown"
+    async def dispatch(self, request: Request, call_next: Callable) -> Response:
         """
         Log request and response with correlation ID.
 

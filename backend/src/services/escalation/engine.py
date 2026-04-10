@@ -90,10 +90,10 @@ class EscalationEngine:
             ],
             'profanity_patterns': [
                 r'fuck', r'shit', r'damn',
-                r'ass', r'whore', r'bitch',
+                r'\bass\b', r'whore', r'bitch',
                 r'cunt', r'dick', r'cock',
                 r'asshole', r'piss', r'shithead',
-                r'bastard', r'crap', r'asshole'
+                r'bastard', r'crap'
             ]
         }
 

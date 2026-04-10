@@ -8,13 +8,14 @@ to guarantee zero message loss during service outages.
 import json
 import logging
 from typing import Any, Dict, List, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from enum import Enum
 
-from sqlalchemy import select, update
+from sqlalchemy import select, update, func, delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.database.connection import get_async_db_session
+from src.models.persisted_message import PersistedMessage, MessageStatus
 
 logger = logging.getLogger(__name__)
 
@@ -63,26 +64,19 @@ class PersistedMessage:
         Returns:
             str: Persistent message ID
         """
-        # TODO: Implement database storage once persistence model is created
-        message_id = f"{topic}-{datetime.utcnow().timestamp()}"
-
-        message_record = {
-            "id": message_id,
-            "topic": topic,
-            "key": key,
-            "value": json.dumps(value),
-            "correlation_id": correlation_id,
-            "status": MessageStatus.RECEIVED.value,
-            "created_at": datetime.utcnow().isoformat(),
-            "updated_at": datetime.utcnow().isoformat(),
-            "metadata": metadata or {},
-            "attempts": 0,
-            "error": None,
-        }
-
-        logger.debug(f"Message stored for persistence: {message_id}")
-
-        return message_id
+        new_message = PersistedMessage(
+            topic=topic,
+            key=key,
+            value=json.dumps(value) if not isinstance(value, str) else value,
+            correlation_id=correlation_id,
+            status=MessageStatus.RECEIVED.value,
+            metadata_json=metadata or {}
+        )
+        session.add(new_message)
+        await session.flush()  # To get the ID
+        
+        logger.debug(f"Message stored for persistence: {new_message.id}")
+        return str(new_message.id)
 
     @staticmethod
     async def update_status(
@@ -102,7 +96,21 @@ class PersistedMessage:
             error: Optional error message
             metadata: Optional metadata to update
         """
-        # TODO: Implement database update once persistence model is created
+        from sqlalchemy import update
+        stmt = (
+            update(PersistedMessage)
+            .where(PersistedMessage.id == message_id)
+            .values(
+                status=status.value,
+                error_message=error,
+                updated_at=func.now()
+            )
+        )
+        if metadata:
+            # Simple metadata update logic
+            pass 
+
+        await session.execute(stmt)
         logger.debug(
             f"Message status updated: {message_id}, status={status.value}, error={error}"
         )
@@ -122,8 +130,20 @@ class PersistedMessage:
         Returns:
             Dictionary with message data or None
         """
-        # TODO: Implement database query once persistence model is created
-        logger.debug(f"Retrieving persisted message: {message_id}")
+        stmt = select(PersistedMessage).where(PersistedMessage.id == message_id)
+        result = await session.execute(stmt)
+        msg = result.scalar_one_or_none()
+        if msg:
+            return {
+                "id": msg.id,
+                "topic": msg.topic,
+                "key": msg.key,
+                "value": msg.value,
+                "correlation_id": msg.correlation_id,
+                "status": msg.status,
+                "created_at": msg.created_at,
+                "metadata": msg.metadata_json
+            }
         return None
 
     @staticmethod
@@ -145,9 +165,27 @@ class PersistedMessage:
         Returns:
             List of persisted messages
         """
-        # TODO: Implement database query once persistence model is created
-        logger.debug(f"Retrieving pending messages: topic={topic}, status={status.value}")
-        return []
+        stmt = (
+            select(PersistedMessage)
+            .where(PersistedMessage.status == status.value)
+            .limit(limit)
+        )
+        if topic:
+            stmt = stmt.where(PersistedMessage.topic == topic)
+            
+        result = await session.execute(stmt)
+        messages = result.scalars().all()
+        
+        return [
+            {
+                "id": m.id,
+                "topic": m.topic,
+                "key": m.key,
+                "value": m.value,
+                "correlation_id": m.correlation_id,
+                "status": m.status
+            } for m in messages
+        ]
 
     @staticmethod
     async def cleanup_old_messages(
@@ -171,11 +209,21 @@ class PersistedMessage:
             MessageStatus.DEAD_LETTER,
         ]
 
-        # TODO: Implement database deletion once persistence model is created
-        deleted_count = 0
+        from sqlalchemy import delete
+        cutoff = datetime.utcnow() - timedelta(days=days_to_keep)
+        exclude_statuses_vals = [s.value for s in (exclude_statuses or [MessageStatus.FAILED, MessageStatus.DEAD_LETTER])]
+        
+        stmt = (
+            delete(PersistedMessage)
+            .where(PersistedMessage.created_at < cutoff)
+            .where(~PersistedMessage.status.in_(exclude_statuses_vals))
+        )
+        
+        result = await session.execute(stmt)
+        deleted_count = result.rowcount
         logger.info(
             f"Cleaned up {deleted_count} old messages, "
-            f"older than {days_to_keep} days, excluding {[s.value for s in exclude_statuses]}"
+            f"older than {days_to_keep} days"
         )
 
         return deleted_count

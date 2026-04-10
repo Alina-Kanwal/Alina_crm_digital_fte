@@ -16,6 +16,9 @@ from src.agent.agent import AIAgent
 from src.services.tone_adapter import ToneAdapter
 from src.services.conversation_manager import ConversationManager
 from src.services.contextual_responder import ContextualResponder
+from src.utils.audit import write_audit
+from src.models.audit_log import AuditActionType
+from src.database.connection import get_db_session
 
 logger = logging.getLogger(__name__)
 
@@ -127,6 +130,15 @@ class InquiryProcessor:
             customer_id = customer_info.get('id')
             logger.debug(f"[{correlation_id}] Identified customer_id: {customer_id}")
 
+            # Record reception in AuditLog
+            with get_db_session() as db:
+                write_audit(
+                    db, AuditActionType.INQUIRY_RECEIVED,
+                    f"New inquiry received from {normalized.get('sender', 'unknown')} via {channel}.",
+                    entity_id=customer_id, entity_type="customer"
+                )
+                db.commit()
+
             if not customer_id:
                 logger.error(f"[{correlation_id}] Failed to identify or create customer. Cannot proceed.")
                 return {'success': False, 'error': 'Customer identification failed'}
@@ -187,13 +199,31 @@ class InquiryProcessor:
                 correlation_id=correlation_id
             )
 
+            # Record resolution in AuditLog
+            with get_db_session() as db:
+                write_audit(
+                    db, AuditActionType.INQUIRY_RESOLVED,
+                    f"Autonomous response delivered to {normalized.get('sender', 'unknown')}.",
+                    entity_id=customer_id, entity_type="customer"
+                )
+                db.commit()
+
+            # 9. Automations (Phase 4: Workflow Action)
+            try:
+                from src.services.automation_service import automation_service
+                asyncio.create_task(
+                    asyncio.to_thread(
+                        automation_service.process_automation_triggers,
+                        customer_id=customer_id,
+                        content=content,
+                        sentiment=sentiment,
+                        sentiment_score=sentiment_score
+                    )
+                )
+            except Exception as auto_err:
+                logger.error(f"[{correlation_id}] Failed to trigger automation: {auto_err}")
+
             duration = time.time() - start_time
-            self.processing_times.append(duration)
-            if len(self.processing_times) > 1000:
-                self.processing_times.pop(0)
-
-            logger.info(f"[{correlation_id}] Completed inquiry processing successfully in {duration:.2f}s")
-
             return {
                 "success": True,
                 "correlation_id": correlation_id,
@@ -205,8 +235,7 @@ class InquiryProcessor:
                 "metadata": {
                     "sentiment": sentiment,
                     "sentiment_score": sentiment_score,
-                    "processing_time": duration,
-                    "has_context": context_result.get('has_context', False)
+                    "processing_time": duration
                 }
             }
 

@@ -7,6 +7,7 @@ from typing import Dict, Optional, Any, Callable, Awaitable
 from datetime import datetime, timedelta
 from enum import Enum
 import asyncio
+import random
 
 logger = logging.getLogger(__name__)
 
@@ -238,7 +239,7 @@ class RetryWithBackoff:
 
         logger.info(
             f"Retry with backoff initialized: max_retries={max_retries}, "
-            f"initial_delay={initial_delay}s, backoff={backoff_multiplier}x"
+            f"initial_delay={initial_delay_seconds}s, backoff={backoff_multiplier}x"
         )
 
     async def execute_with_retry(

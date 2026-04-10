@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 CORRELATION_HEADER = "X-Correlation-ID"
 
 
-class CorrelationIDMiddleware:
+from starlette.middleware.base import BaseHTTPMiddleware
+
+class CorrelationIDMiddleware(BaseHTTPMiddleware):
     """
     Middleware to manage correlation IDs for request tracing.
 
@@ -35,9 +37,9 @@ class CorrelationIDMiddleware:
         Args:
             app: FastAPI application
         """
-        self.app = app
+        super().__init__(app)
 
-    async def __call__(
+    async def dispatch(
         self,
         request: Request,
         call_next: Callable,

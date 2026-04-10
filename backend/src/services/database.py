@@ -13,51 +13,50 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Database configuration - try PostgreSQL first, fallback to SQLite for development
-def get_database_url():
-    """Get database URL with fallback to SQLite for development."""
-    database_url = os.getenv("DATABASE_URL")
+# Load environment variables
+load_dotenv()
 
-    if database_url:
-        # Test if PostgreSQL is available
-        try:
-            import psycopg2
-            from urllib.parse import urlparse
-            parsed = urlparse(database_url)
-            conn = psycopg2.connect(
-                host=parsed.hostname,
-                port=parsed.port or 5432,
-                user=parsed.username,
-                password=parsed.password,
-                database=parsed.path[1:],  # Remove leading '/'
-                connect_timeout=3
-            )
-            conn.close()
-            return database_url
-        except Exception:
-            # PostgreSQL not available, fallback to SQLite for development
-            pass
+_RAW_DATABASE_URL = os.getenv(
+    "DATABASE_URL",
+    "postgresql://dte_user:dte_password@localhost:5432/dte_db"
+)
 
-    # Fallback to SQLite for development
-    return "sqlite:///./test.db"
+def _get_clean_sync_url(_url: str):
+    """Sanitize and return sync connection config for psycopg2."""
+    if not _url or "sqlite" in _url:
+        return _url or "sqlite:///./test.db", {}
+        
+    import re
+    # Extract base part up to the first '?'
+    clean_base = _url.split('?')[0]
+    # Ensure sync protocol
+    sync_url = clean_base.replace("postgresql+asyncpg://", "postgresql://")
+    if not sync_url.startswith("postgresql://"):
+        sync_url = f"postgresql://{sync_url}"
+    
+    # Check for SSL requirement
+    is_ssl = "sslmode=require" in _url.lower() or "ssl=true" in _url.lower()
+    
+    sync_args = {}
+    if is_ssl:
+        sync_args["sslmode"] = "require"
+        
+    return sync_url, sync_args
 
-# Create engine
-DATABASE_URL = get_database_url()
+DATABASE_URL, SYNC_CONNECT_ARGS = _get_clean_sync_url(_RAW_DATABASE_URL)
 is_sqlite = "sqlite" in DATABASE_URL
+
 engine_args = {
     "pool_pre_ping": True,
     "pool_recycle": 300,
     "echo": os.getenv("SQL_ECHO", "false").lower() == "true",
+    "connect_args": SYNC_CONNECT_ARGS
 }
 
 if is_sqlite:
-    # SQLite specific configurations to avoid compatibility issues
+    # SQLite specific configurations
     engine_args["connect_args"] = {"check_same_thread": False}
-    # Explicitly disable RETURNING which causes e3q8 errors on some platforms
     engine_args["implicit_returning"] = False
-else:
-    # PostgreSQL specific configurations
-    pass
 
 engine = create_engine(DATABASE_URL, **engine_args)
 

@@ -91,7 +91,7 @@ class DocumentSearchService:
 
             if not results:
                 logger.warning("No documentation matches found via pgvector search")
-                return self._get_static_sample_docs(query, max_results)
+                return self._get_database_keyword_search(query, max_results)
 
             # Store in cache
             try:
@@ -103,23 +103,41 @@ class DocumentSearchService:
             return results
 
         except Exception as e:
-            logger.error(f"Database pgvector search failed: {e}. Falling back to sample docs.")
-            return self._get_static_sample_docs(query, max_results)
+            logger.error(f"Database pgvector search failed: {e}. Falling back to keyword search.")
+            return self._get_database_keyword_search(query, max_results)
         finally:
             db.close()
 
-    def _get_static_sample_docs(self, query: str, max_results: int) -> List[Dict[str, Any]]:
-        """Fallback to sample data for development if DB is empty or fails."""
-        logger.debug("Falling back to static sample documentation")
-        samples = [
-            {'title': 'Getting Started Guide', 'content': 'Welcome to our platform! Start by signing up...'},
-            {'title': 'Billing FAQ', 'content': 'Monthly cycle. Refunds via billing team.'},
-            {'title': 'API Reference', 'content': 'JSON payloads, 1000 requests per hour limit.'},
-            {'title': 'Security', 'content': 'All data encrypted with TLS 1.3/AES-256.'}
-        ]
-        
-        matches = [s for s in samples if query.lower() in s['content'].lower() or query.lower() in s['title'].lower()]
-        return [{"id": "sample", "score": 0.8, **m} for m in matches[:max_results]]
+    def _get_database_keyword_search(self, query: str, max_results: int) -> List[Dict[str, Any]]:
+        """Fallback to real database keyword search if semantic search fails."""
+        logger.debug(f"Falling back to database keyword search for: '{query}'")
+        db = SessionLocal()
+        try:
+            # Simple keyword match using ILIKE
+            query_word = f"%{query}%"
+            stmt = select(Documentation).where(
+                (Documentation.title.ilike(query_word)) | 
+                (Documentation.content.ilike(query_word))
+            ).limit(max_results)
+            
+            result = db.execute(stmt).scalars().all()
+            
+            return [
+                {
+                    "id": str(doc.id),
+                    "title": doc.title,
+                    "content": doc.content,
+                    "source": doc.source,
+                    "category": doc.category,
+                    "score": 0.5  # Lower confidence for keyword match
+                }
+                for doc in result
+            ]
+        except Exception as e:
+            logger.error(f"Keyword search also failed: {e}")
+            return []
+        finally:
+            db.close()
 
     async def add_document(self, title: str, content: str, category: str = "general", source: str = None) -> bool:
         """
@@ -138,8 +156,7 @@ class DocumentSearchService:
         
         embedding = await generate_embedding(content)
         if not embedding:
-            logger.error(f"Failed to generate embedding for document: {title}")
-            return False
+            logger.warning(f"Failed to generate embedding for document: {title}. Doc will still be available via keyword search.")
 
         db = SessionLocal()
         try:

@@ -134,32 +134,36 @@ const SupportForm: React.FC<SupportFormProps> = ({
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          channel: 'webform',
+          subject: formData.subject || 'General Inquiry',
+          body: formData.message,
+          sender: formData.email,
+          metadata: { name: formData.name },
+        })
       });
       const responseData = await res.json();
-      const response = { data: responseData };
 
-      if (response.data.success) {
+      if (res.ok && responseData.success) {
         setSubmitStatus({
           status: 'success',
-          message: response.data.message || 'Your request has been beautifully received!'
+          message: 'Your request has been beautifully received!'
         });
 
-        const submissionId = response.data.submissionId || `${formData.email}_${Date.now()}`;
-
-        if (showResponsePreview) {
-          setIsCheckingResponse(true);
+        // Use the real AI response from the backend
+        if (showResponsePreview && responseData.response) {
+          setAiResponse(responseData.response);
+        } else if (showResponsePreview) {
+          setAiResponse("Thank you for your inquiry! Our systems are processing it.");
         }
       } else {
-        throw new Error(response.data.message || 'Submission failed');
+        throw new Error(responseData.error || responseData.message || 'Submission failed');
       }
     } catch (error: any) {
       console.error('Error submitting form:', error);
       setSubmitStatus({
         status: 'error',
-        message: error.response?.data?.message ||
-                 error.message ||
-                 'Failed to submit inquiry. Please try again.'
+        message: error.message || 'Failed to submit inquiry. Please try again.'
       });
     } finally {
       setIsSubmitting(false);

@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
 from typing import Dict, Any
 import logging
 from src.services.inquiry_processor import InquiryProcessor
-from src.middleware.correlation import get_correlation_id
+from src.middleware.logging import get_correlation_id
 
 logger = logging.getLogger(__name__)
 

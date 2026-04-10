@@ -1,7 +1,7 @@
 """
 Customer model for storing customer information and cross-channel identification.
 """
-from sqlalchemy import Column, String, Text, JSON, Boolean, Index
+from sqlalchemy import Column, String, Text, JSON, Boolean, Index, Float, DateTime
 from src.utils.db_utils import Vector1536
 from src.models.base import BaseModel
 
@@ -19,6 +19,7 @@ class Customer(BaseModel):
     last_name = Column(String(100), nullable=True)
     session_ids = Column(JSON, default=list)
     embedding = Column(Vector1536, nullable=True)
+    lead_score = Column(Float, default=0.0)
     customer_metadata = Column(JSON, default=dict)
     is_active = Column(Boolean, default=True, index=True)
 

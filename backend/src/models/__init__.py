@@ -8,6 +8,12 @@ from src.models.support_ticket import SupportTicket
 from src.models.conversation_thread import ConversationThread
 from src.models.escalation import EscalationRule, DEFAULT_RULES
 from src.models.sentiment_record import SentimentRecord
+from src.models.user import User, UserRole
+from src.models.deal import Deal, DealStage
+from src.models.task import Task
+from src.models.audit_log import AuditLog, AuditActionType
+from src.models.persisted_message import PersistedMessage, MessageStatus
+from src.models.dlq_entry import DLQEntry
 
 __all__ = [
     "Base",
@@ -17,4 +23,14 @@ __all__ = [
     "EscalationRule",
     "DEFAULT_RULES",
     "SentimentRecord",
+    "User",
+    "UserRole",
+    "Deal",
+    "DealStage",
+    "Task",
+    "AuditLog",
+    "AuditActionType",
+    "PersistedMessage",
+    "MessageStatus",
+    "DLQEntry",
 ]
