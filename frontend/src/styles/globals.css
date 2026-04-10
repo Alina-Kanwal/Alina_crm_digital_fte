@@ -2,38 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --background: #0A0A0B;
+  --foreground: #F8FAFC;
+  --accent: #6366F1;
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.08);
+}
+
 @layer base {
   body {
-    @apply bg-background text-text antialiased;
+    background-color: var(--background);
+    color: var(--foreground);
+    @apply antialiased selection:bg-indigo-500/30;
   }
 }
 
-/* Custom animations and styling to match Anthropic premium feel */
-@layer utilities {
-  .animate-fade-in {
-    animation: fadeIn 0.4s ease-out forwards;
+@layer components {
+  .glass-panel {
+    @apply bg-white/[0.03] backdrop-blur-xl border border-white/[0.08] shadow-2xl;
   }
   
-  .animate-slide-up {
-    animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  .premium-gradient {
+    background: radial-gradient(circle at 50% 50%, #1e1b4b 0%, #0a0a0b 100%);
   }
 }
 
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+@layer utilities {
+  .animate-reveal {
+    animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
 }
 
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(12px); }
+@keyframes reveal {
+  from { opacity: 0; transform: translateY(20px); }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Hide scrollbar for clean minimal look */
-.scrollbar-hide::-webkit-scrollbar {
-    display: none;
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-15px); }
+  100% { transform: translateY(0px); }
 }
-.scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
+
+/* Smooth custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0A0A0B;
+}
+::-webkit-scrollbar-thumb {
+  background: #1E1B4B;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #6366F1;
 }
