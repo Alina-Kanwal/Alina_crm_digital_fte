@@ -255,15 +255,9 @@ export default function Home() {
         </div>
       </main>
 
-      <style jsx global>{`
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 12s linear infinite;
-        }
-      `}</style>
+      <footer className="py-12 text-center text-[10px] tracking-[0.5em] text-white/10 font-bold uppercase overflow-hidden">
+        Digital FTE Factory // 2026 Internal Utility
+      </footer>
     </div>
   );
 }
