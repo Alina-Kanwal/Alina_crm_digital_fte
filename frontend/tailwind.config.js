@@ -18,16 +18,16 @@ module.exports = {
       },
       keyframes: {
         'spin-slow': {
-          from { transform: rotate(0deg) },
-          to { transform: rotate(360deg) },
+          'from': { transform: 'rotate(0deg)' },
+          'to': { transform: 'rotate(360deg)' },
         },
         'float': {
-          '0%, 100%': { transform: translateY(0px) },
-          '50%': { transform: translateY(-15px) },
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-15px)' },
         },
         'reveal': {
-          from { opacity: '0', transform: 'translateY(20px)' },
-          to { opacity: '1', transform: 'translateY(0)' },
+          'from': { opacity: '0', transform: 'translateY(20px)' },
+          'to': { opacity: '1', transform: 'translateY(0)' },
         },
       },
     },
