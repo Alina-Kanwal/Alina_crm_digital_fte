@@ -2,16 +2,46 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  @apply bg-[#020203] text-slate-400 antialiased;
+@layer base {
+  body {
+    @apply bg-[#FAF9F7] text-[#1c1c1c] antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+.anthropic-border {
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.anthropic-shadow {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.03), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(0, 0, 0, 0.06);
 }
 
-.neural-orb-gradient {
-  background: radial-gradient(circle at center, #1e1b4b 0%, #0a0a0b 100%);
+.input-anthropic {
+  @apply bg-white border border-opacity-10 border-black px-4 py-3 rounded-lg focus:outline-none focus:ring-1 focus:ring-black/20 focus:border-black/30 transition-all font-sans text-[15px];
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Subtle pulse for live indicators instead of intense neon */
+@keyframes soft-pulse {
+  0% { transform: scale(0.95); opacity: 0.8; }
+  50% { transform: scale(1.05); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.8; }
+}
+.animate-soft-pulse {
+  animation: soft-pulse 3s ease-in-out infinite;
 }

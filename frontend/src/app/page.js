@@ -2,19 +2,18 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, Loader2, Bot, Terminal, Cpu, Database, Network } from "lucide-react";
+import { ArrowRight, Loader2, PlayCircle, Bot, Mail, AlignLeft, Send, Check } from "lucide-react";
 
 export default function Home() {
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
   const [status, setStatus] = useState({ type: 'idle', message: '' });
   const [liveFeed, setLiveFeed] = useState([]);
-  const [isNeuralActive, setIsNeuralActive] = useState(false);
-  
-  const feedRef = useRef(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const feedEndRef = useRef(null);
 
   const isValid = formData.email?.includes('@') && formData.message?.length > 5;
 
-  // Poll Live Feed
+  // Poll Live System Feed
   useEffect(() => {
     const fetchFeed = async () => {
       try {
@@ -24,7 +23,7 @@ export default function Home() {
           const data = await res.json();
           setLiveFeed(data);
         }
-      } catch (e) { /* silent fail */ }
+      } catch (e) { /* silent fail for clean UI */ }
     };
     
     fetchFeed();
@@ -37,7 +36,7 @@ export default function Home() {
     if (!isValid || status.type === 'loading') return;
     
     setStatus({ type: 'loading', message: '' });
-    setIsNeuralActive(true); // Trigger Neural Pulse
+    setIsProcessing(true);
 
     const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -47,7 +46,7 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           channel: 'webform',
-          subject: formData.subject || 'General Enquiry',
+          subject: formData.subject || 'General Request',
           body: formData.message,
           sender: formData.email,
           metadata: { name: formData.name },
@@ -55,208 +54,191 @@ export default function Home() {
       });
       
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.detail || 'Logic overflow. Retrying...');
+      if (!res.ok) throw new Error(data?.detail || 'System busy. Please try again.');
       
+      // Intentional delay for refined UX feel
       setTimeout(() => {
-        setStatus({ type: 'success', message: 'Cognitive Cycle Completed.', response: data.response });
-        setIsNeuralActive(false);
-      }, 1500); // Artificial delay to show "Thinking"
+        setStatus({ type: 'success', message: 'Action complete.', response: data.response });
+        setIsProcessing(false);
+      }, 1000);
       
     } catch (err) {
       setStatus({ type: 'error', message: err.message });
-      setIsNeuralActive(false);
+      setIsProcessing(false);
     }
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#020203] selection:bg-indigo-500/30 font-sans antialiased text-slate-400">
+    <div className="min-h-screen bg-[#FAF9F7] text-[#1A1C20] font-sans selection:bg-brand-200">
       
-      {/* 3D Neural Background Effect */}
-      <div className="fixed inset-0 pointer-events-none opacity-20">
-         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-indigo-600/10 blur-[150px] rounded-full"></div>
-      </div>
-
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full p-8 flex justify-between items-center z-50 mix-blend-difference">
+      {/* Refined Navigation */}
+      <nav className="w-full px-6 py-5 md:px-12 flex justify-between items-center bg-[#FAF9F7]/80 backdrop-blur-md sticky top-0 z-50 border-b border-black/5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 border border-white/10 rounded-full flex items-center justify-center bg-white/5 backdrop-blur-md">
-            <Cpu size={18} className="text-indigo-400 animate-pulse" />
+          <div className="bg-[#1A1C20] p-1.5 rounded flex items-center justify-center">
+            <Bot className="text-white" size={16} />
           </div>
-          <span className="text-sm font-black tracking-[0.4em] uppercase text-white">Digital FTE Factory</span>
+          <span className="font-serif text-lg font-semibold tracking-tight text-[#1A1C20]">Digital FTE</span>
         </div>
-        <Link href="/dashboard" className="text-[10px] font-bold tracking-[0.3em] uppercase py-2.5 px-6 border border-white/5 rounded-full hover:bg-white/5 transition-all flex items-center gap-3 text-white/60">
-          CORE CONSOLE <ArrowRight size={14} />
+        <Link href="/dashboard" className="text-sm font-medium text-[#63656A] hover:text-[#1A1C20] transition-colors flex items-center gap-2 group">
+          Go to Console <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
         </Link>
       </nav>
 
-      <main className="relative z-10 pt-32 pb-20 px-6 max-w-7xl mx-auto grid lg:grid-cols-12 gap-12 items-start">
+      <main className="max-w-[1200px] mx-auto px-6 py-16 md:py-24 grid lg:grid-cols-12 gap-16 lg:gap-24 relative">
         
-        {/* LEFT: Live Operational Terminal & 3D Neural Core */}
-        <div className="lg:col-span-7 space-y-12">
+        {/* LEFT COLUMN: Narrative & Live System Feel */}
+        <div className="lg:col-span-7 flex flex-col justify-center animate-fade-in-up">
           
-          {/* Headline */}
-          <div className="animate-reveal">
-            <h1 className="text-6xl md:text-8xl font-black text-white leading-[0.9] mb-8 tracking-tighter">
-              LIVING <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-slate-500">INTELLIGENCE</span>
-            </h1>
-            <p className="text-lg font-medium text-white/30 max-w-xl leading-relaxed">
-              Your autonomous workforce is active. Monitoring 24,000+ data points for real-time pipeline resolution and enterprise alignment.
-            </p>
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-black/5 bg-black/[0.02] text-xs font-semibold text-[#63656A] mb-8 w-max">
+            <div className="w-2 h-2 rounded-full bg-brand-600 animate-pulse"></div>
+            Autonomous Workflow Active
           </div>
 
-          {/* 3D NEURAL ORB - The "AI Brain" */}
-          <div className="relative h-[300px] flex items-center justify-center group">
-             {/* The Orb */}
-             <div className={`
-               relative w-48 h-48 rounded-full transition-all duration-1000
-               ${isNeuralActive ? 'scale-125 shadow-[0_0_100px_rgba(99,102,241,0.4)]' : 'scale-100 shadow-[0_0_60px_rgba(99,102,241,0.1)]'}
-               bg-gradient-to-tr from-indigo-600/40 via-purple-600/40 to-slate-900/40 backdrop-blur-3xl border border-white/10 animate-float
-             `}>
-                <div className="absolute inset-2 rounded-full border border-white/5 animate-spin-slow opacity-30"></div>
-                <div className="absolute inset-0 flex items-center justify-center">
-                   <Network size={32} className={`transition-all ${isNeuralActive ? 'text-white animate-spin' : 'text-indigo-400/50'}`} />
-                </div>
-             </div>
-             {/* Labels revolving around */}
-             <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute top-1/2 left-1/2 -translate-x-[150%] -translate-y-full text-[10px] font-mono tracking-widest text-indigo-400 opacity-40 uppercase">Memory: OK</div>
-                <div className="absolute top-1/2 left-1/2 translate-x-[50%] translate-y-[100%] text-[10px] font-mono tracking-widest text-purple-400 opacity-40 uppercase">Logic: 98.9%</div>
-             </div>
-          </div>
+          <h1 className="font-serif text-5xl md:text-7xl lg:text-[5.5rem] leading-[1.05] tracking-tight text-[#1A1C20] mb-8 font-medium">
+            Intelligence <br/>
+            <span className="text-[#84878E] italic">that operates.</span>
+          </h1>
+          
+          <p className="text-[#63656A] text-lg md:text-xl leading-relaxed max-w-lg mb-14 font-light">
+            An elegant, autonomous customer success foundation. It reasons through inquiries, assigns ownership, and logs every action—so your team can focus on the relationships that matter.
+          </p>
 
-          {/* LIVE TERMINAL FEED */}
-          <div className="border border-white/5 bg-white/[0.02] rounded-2xl p-6 backdrop-blur-md animate-reveal" style={{ animationDelay: '0.2s' }}>
-             <div className="flex justify-between items-center mb-6 pb-4 border-b border-white/5">
-                <div className="flex items-center gap-3 text-white/80 font-bold text-xs tracking-widest uppercase">
-                  <Terminal size={14} className="text-indigo-500" /> Operational Live-Feed
-                </div>
-                <div className="text-[10px] font-bold text-green-500 flex items-center gap-2">
-                  <span className="w-1 h-1 bg-green-500 rounded-full animate-ping"></span> LOG_STREAM_OPEN
-                </div>
-             </div>
-             <div className="space-y-4 font-mono text-[11px] h-[180px] overflow-hidden" ref={feedRef}>
+          {/* Clean Enterprise Log (Replaces Hacker Terminal) */}
+          <div className="w-full max-w-lg border border-black/5 bg-white rounded-xl shadow-sm overflow-hidden flex flex-col h-[260px]">
+            <div className="bg-[#F5F4F1] px-5 py-3 border-b border-black/5 flex items-center justify-between">
+              <span className="text-xs font-semibold text-[#63656A] tracking-wide uppercase">System Activity Log</span>
+              <div className="flex items-center gap-1.5 text-[11px] font-medium text-brand-600">
+                <PlayCircle size={12} /> Syncing
+              </div>
+            </div>
+            
+            <div className="p-5 flex-1 overflow-y-auto flex flex-col gap-4 text-sm font-sans bg-[#FCFBF9]">
                 {liveFeed.length > 0 ? liveFeed.map((log, i) => (
-                  <div key={log.id} className="flex gap-4 animate-reveal" style={{ animationDelay: `${i*100}ms` }}>
-                    <span className="text-white/20 whitespace-nowrap">[{log.timestamp.split('T')[1].split('.')[0]}]</span>
-                    <span className="text-indigo-400 uppercase tracking-tighter">{log.action}:</span>
-                    <span className="text-white/50">{log.message}</span>
+                  <div key={log.id} className="flex gap-4 items-start pb-4 border-b border-black/[0.03] last:border-0 last:pb-0 fade-in" style={{ animationDelay: `${i*100}ms` }}>
+                    <div className="text-[#A1A3A8] text-xs font-mono pt-0.5 whitespace-nowrap">
+                      {log.timestamp.split('T')[1].split('.')[0]}
+                    </div>
+                    <div className="flex flex-col gap-0.5">
+                      <span className="font-semibold text-[#35221b] text-xs uppercase tracking-wide">
+                        {log.action.replace(/_/g, ' ')}
+                      </span>
+                      <span className="text-[#63656A] font-light leading-relaxed">
+                        {log.message}
+                      </span>
+                    </div>
                   </div>
                 )) : (
-                  <div className="text-white/10 italic">Initializing cognitive telemetry...</div>
+                  <div className="h-full flex items-center justify-center text-[#A1A3A8] italic font-light text-sm">
+                     Waiting for system events...
+                  </div>
                 )}
-             </div>
+            </div>
           </div>
+
         </div>
 
-        {/* RIGHT: Interaction Payload (The Form) */}
-        <div className="lg:col-span-5 lg:sticky lg:top-32 animate-reveal" style={{ animationDelay: '0.3s' }}>
-          <div className="bg-white/[0.03] border border-white/10 rounded-[2.5rem] p-1 shadow-2xl">
-            <div className="bg-[#0A0A0B] rounded-[2.4rem] p-10 border border-white/5 relative overflow-hidden">
-               
-               {/* Success State */}
-               {status.type === 'success' ? (
-                 <div className="py-12 flex flex-col items-center text-center space-y-8 animate-reveal">
-                    <div className="w-20 h-20 rounded-3xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 animate-float">
-                       <Bot size={40} />
-                    </div>
-                    <div className="space-y-4">
-                      <h3 className="text-3xl font-black text-white italic tracking-tighter">AI AGENT: "CONFIRMED"</h3>
-                      <p className="text-slate-400 text-sm italic leading-relaxed px-4">
-                         "{status.response}"
-                      </p>
-                    </div>
-                    <button 
-                      onClick={() => setStatus({type:'idle'})}
-                      className="mt-8 px-10 py-4 rounded-full bg-white text-black text-[11px] font-black uppercase tracking-[0.3em] hover:bg-slate-200 transition-all shadow-xl shadow-white/5"
-                    >
-                      Initiate New Command
-                    </button>
+        {/* RIGHT COLUMN: Action Form */}
+        <div className="lg:col-span-5 flex flex-col justify-center animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+          
+          <div className="bg-white rounded-2xl p-8 border border-black/5 shadow-xl shadow-black/[0.03] relative overflow-hidden transition-all duration-500">
+             
+             {/* Progress indicator bar at top */}
+             {isProcessing && (
+               <div className="absolute top-0 left-0 w-full h-1 bg-black/5">
+                 <div className="h-full bg-[#1A1C20] animate-pulse"></div>
+               </div>
+             )}
+
+             {status.type === 'success' ? (
+               <div className="py-12 flex flex-col items-center text-center space-y-6 animate-fade-in-up">
+                  <div className="w-14 h-14 rounded-full bg-green-50 border border-green-100 flex items-center justify-center text-green-600 mb-2">
+                     <Check size={28} />
+                  </div>
+                  <h3 className="font-serif text-3xl font-medium text-[#1A1C20]">Received</h3>
+                  <div className="p-5 bg-[#FAF9F7] rounded-lg border border-black/5 text-[#63656A] text-sm leading-relaxed font-light mb-4">
+                     "{status.response}"
+                  </div>
+                  <button 
+                    onClick={() => setStatus({type:'idle'})}
+                    className="text-sm font-semibold text-[#1A1C20] hover:text-brand-600 transition-colors uppercase tracking-widest pt-4"
+                  >
+                    Submit Another Request
+                  </button>
+               </div>
+             ) : (
+               <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+                 <div className="mb-2">
+                   <h2 className="text-xl font-semibold text-[#1A1C20] mb-1 font-serif">Interact with Digital FTE</h2>
+                   <p className="text-sm text-[#84878E] font-light">Submit an inquiry and watch the system process it in real-time.</p>
                  </div>
-               ) : (
-                 <form onSubmit={handleSubmit} className="space-y-8">
-                   <div className="space-y-6">
-                      <h3 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/20 border-b border-white/5 pb-4">Payload Manifest</h3>
-                      
-                      <div className="grid grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                           <label className="text-[10px] uppercase font-black text-indigo-400 tracking-widest">ID</label>
-                           <input 
-                             type="text" required placeholder="Subject-Alpha"
-                             className="w-full bg-transparent border-b border-white/10 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all placeholder:text-white/5"
-                             value={formData.name} onChange={e=>setFormData(p=>({...p, name: e.target.value}))}
-                           />
-                        </div>
-                        <div className="space-y-3">
-                           <label className="text-[10px] uppercase font-black text-indigo-400 tracking-widest">Target</label>
-                           <input 
-                             type="email" required placeholder="target@node.com"
-                             className="w-full bg-transparent border-b border-white/10 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all placeholder:text-white/5"
-                             value={formData.email} onChange={e=>setFormData(p=>({...p, email: e.target.value}))}
-                           />
-                        </div>
-                      </div>
 
-                      <div className="space-y-3">
-                        <label className="text-[10px] uppercase font-black text-indigo-400 tracking-widest">Objective</label>
-                        <input 
-                          type="text" placeholder="Strategic summary"
-                          className="w-full bg-transparent border-b border-white/10 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all placeholder:text-white/5"
-                          value={formData.subject} onChange={e=>setFormData(p=>({...p, subject: e.target.value}))}
-                        />
-                      </div>
-
-                      <div className="space-y-3">
-                        <label className="text-[10px] uppercase font-black text-indigo-400 tracking-widest">Instructions</label>
-                        <textarea 
-                          required placeholder="Input cognitive sequence requirements..."
-                          className="w-full bg-transparent border-b border-white/10 py-3 text-sm text-white focus:outline-none focus:border-indigo-500 transition-all min-h-[120px] resize-none placeholder:text-white/5"
-                          value={formData.message} onChange={e=>setFormData(p=>({...p, message: e.target.value}))}
-                        />
-                      </div>
+                 <div className="space-y-4">
+                   <div>
+                     <label className="block text-xs font-semibold text-[#63656A] uppercase tracking-wide mb-1.5 ml-1">Name</label>
+                     <input 
+                       type="text" required placeholder="Jane Doe"
+                       className="input-anthropic w-full"
+                       value={formData.name} onChange={e=>setFormData(p=>({...p, name: e.target.value}))}
+                     />
                    </div>
 
-                   <button 
-                     type="submit"
-                     disabled={!isValid || status.type === 'loading'}
-                     className={`
-                       w-full py-5 rounded-2xl font-black text-[12px] uppercase tracking-[0.4em] transition-all relative overflow-hidden
-                       ${status.type === 'loading' ? 'bg-indigo-900 text-white/40' : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-2xl shadow-indigo-600/30'}
-                       active:scale-[0.98] disabled:opacity-20
-                     `}
-                   >
-                     {status.type === 'loading' ? (
-                       <div className="flex items-center justify-center gap-4">
-                         <div className="w-2 h-2 bg-white rounded-full animate-bounce"></div>
-                         <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay:'0.2s'}}></div>
-                         <div className="w-2 h-2 bg-white rounded-full animate-bounce" style={{animationDelay:'0.4s'}}></div>
-                         Processing Logic
-                       </div>
-                     ) : (
-                       "EXECUTE SEQUENCE"
-                     )}
-                   </button>
-                   
-                   {status.type === 'error' && (
-                     <div className="p-4 bg-red-500/10 border border-red-500/20 text-red-500 text-[10px] font-black uppercase tracking-[0.2em] text-center rounded-lg">
-                       ERROR: {status.message}
-                     </div>
-                   )}
-                 </form>
-               )}
+                   <div>
+                     <label className="block text-xs font-semibold text-[#63656A] uppercase tracking-wide mb-1.5 ml-1">Email <span className="text-brand-600 font-normal">*</span></label>
+                     <input 
+                       type="email" required placeholder="jane@example.com"
+                       className="input-anthropic w-full"
+                       value={formData.email} onChange={e=>setFormData(p=>({...p, email: e.target.value}))}
+                     />
+                   </div>
 
-               {/* Stats Overlay */}
-               <div className="mt-10 pt-10 border-t border-white/5 grid grid-cols-2 gap-8 text-[10px] font-bold text-white/20 uppercase tracking-widest">
-                  <div className="flex items-center gap-2"><Database size={14} /> Synchronized</div>
-                  <div className="flex items-center gap-2"><Activity size={14} /> Neural-Active</div>
-               </div>
-            </div>
+                   <div>
+                     <label className="block text-xs font-semibold text-[#63656A] uppercase tracking-wide mb-1.5 ml-1">Topic</label>
+                     <input 
+                       type="text" placeholder="Partnership inquiry..."
+                       className="input-anthropic w-full"
+                       value={formData.subject} onChange={e=>setFormData(p=>({...p, subject: e.target.value}))}
+                     />
+                   </div>
+
+                   <div>
+                     <label className="block text-xs font-semibold text-[#63656A] uppercase tracking-wide mb-1.5 ml-1">Request Details <span className="text-brand-600 font-normal">*</span></label>
+                     <textarea 
+                       required placeholder="How can the autonomous workforce assist you today?"
+                       className="input-anthropic w-full min-h-[130px] resize-y"
+                       value={formData.message} onChange={e=>setFormData(p=>({...p, message: e.target.value}))}
+                     />
+                   </div>
+                 </div>
+
+                 <button 
+                   type="submit"
+                   disabled={!isValid || status.type === 'loading'}
+                   className="mt-4 w-full py-3.5 rounded-lg bg-[#1A1C20] hover:bg-[#2C2E33] text-white font-medium text-sm transition-all focus:ring-2 focus:ring-offset-2 focus:ring-[#1A1C20] disabled:opacity-40 flex items-center justify-center gap-2 h-[52px]"
+                 >
+                   {status.type === 'loading' ? (
+                     <Loader2 className="animate-spin text-white/70" size={18} />
+                   ) : (
+                     <>Submit Request <Send size={16} className="text-white/80" /></>
+                   )}
+                 </button>
+                 
+                 {status.type === 'error' && (
+                   <p className="text-center text-xs text-red-600 font-medium mt-2 bg-red-50 p-2 rounded border border-red-100">
+                     {status.message}
+                   </p>
+                 )}
+               </form>
+             )}
           </div>
         </div>
       </main>
 
-      <footer className="py-12 text-center text-[10px] tracking-[0.5em] text-white/10 font-bold uppercase overflow-hidden">
-        Digital FTE Factory // 2026 Internal Utility
+      {/* Elegant Footer */}
+      <footer className="w-full py-10 border-t border-black/5 mt-10">
+        <div className="max-w-[1200px] mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4 text-xs font-medium text-[#A1A3A8] uppercase tracking-widest">
+          <span>Digital FTE © {new Date().getFullYear()}</span>
+          <span>Designed for Elegance & Autonomy</span>
+        </div>
       </footer>
     </div>
   );
