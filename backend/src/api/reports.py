@@ -6,7 +6,7 @@ from typing import Optional
 from datetime import datetime, timedelta
 import logging
 from src.services.reports.daily import DailyReportGenerator
-from src.database.connection import get_async_session
+from src.database.connection import get_async_db_session
 from src.models.audit_log import AuditLog
 from sqlalchemy import select, desc
 from fastapi import Depends
@@ -21,7 +21,7 @@ report_generator = DailyReportGenerator()
 @router.get("/live-feed")
 async def get_live_activity_feed(
     limit: int = Query(10, ge=1, le=50),
-    db: AsyncSession = Depends(get_async_session)
+    db: AsyncSession = Depends(get_async_db_session)
 ):
     """
     Retrieve the most recent autonomous activities from the audit logs.

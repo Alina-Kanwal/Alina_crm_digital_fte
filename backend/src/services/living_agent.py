@@ -117,4 +117,4 @@ class LivingAgentService:
         logger.info("Autonomous review cycle finished.")
 
 
-living_agent = LivingAgentService()
+living_agent = LivingAgentService(interval_seconds=15)
