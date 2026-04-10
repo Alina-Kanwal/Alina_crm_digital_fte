@@ -2,52 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
-:root {
-  --background: #0A0A0B;
-  --foreground: #F8FAFC;
-}
-
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  -webkit-font-smoothing: antialiased;
+  @apply bg-[#020203] text-slate-400 antialiased;
 }
 
 .glass-panel {
   background: rgba(255, 255, 255, 0.03);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
 }
 
-.premium-gradient {
+.neural-orb-gradient {
   background: radial-gradient(circle at center, #1e1b4b 0%, #0a0a0b 100%);
-}
-
-@keyframes reveal {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes float {
-  0% { transform: translateY(0px); }
-  50% { transform: translateY(-15px); }
-  100% { transform: translateY(0px); }
-}
-
-@keyframes spin-slow {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.animate-reveal {
-  animation: reveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-spin-slow {
-  animation: spin-slow 12s linear infinite;
 }
