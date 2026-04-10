@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Loader2, Sparkles, ShieldCheck, Zap, Globe } from "lucide-react";
+import { ArrowRight, Loader2, Command, Shield, Activity, Fingerprint } from "lucide-react";
 
 export default function Home() {
   const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
@@ -31,7 +31,7 @@ export default function Home() {
       });
       
       const data = await res.json();
-      if (!res.ok) throw new Error(data?.detail || 'System busy. Try again.');
+      if (!res.ok) throw new Error(data?.detail || 'System unavailable');
       
       setStatus({ type: 'success', message: 'Transmission received.', response: data.response });
     } catch (err) {
@@ -40,114 +40,104 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden premium-gradient selection:bg-indigo-500/30 font-sans">
+    <div className="relative min-h-screen overflow-hidden bg-[#050505] selection:bg-white/10 font-sans antialiased text-slate-200">
       
-      {/* Dynamic Background Elements */}
-      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 blur-[120px] rounded-full animate-float"></div>
-      <div className="absolute bottom-[-10%] right-[-10%] w-[30%] h-[30%] bg-blue-600/10 blur-[100px] rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
+      {/* Background: Subtle Grain & Depth */}
+      <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20 mix-blend-soft-light pointer-events-none"></div>
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-[500px] bg-gradient-to-b from-indigo-500/10 to-transparent blur-[120px] pointer-events-none"></div>
 
       {/* Navigation */}
-      <nav className="fixed top-0 w-full p-6 flex justify-between items-center z-50 bg-black/5 backdrop-blur-md border-b border-white/5 px-8 md:px-16 overflow-hidden">
-        <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-tr from-indigo-500 to-purple-500 p-2 rounded-xl shadow-lg shadow-indigo-500/20">
-            <Zap className="text-white fill-white" size={20} />
+      <nav className="fixed top-0 w-full p-8 flex justify-between items-center z-50">
+        <div className="flex items-center gap-2 group cursor-default">
+          <div className="w-8 h-8 border border-white/20 rounded-lg flex items-center justify-center bg-white/5 transition-colors group-hover:border-white/40">
+            <Command size={14} className="text-white/70" />
           </div>
-          <span className="text-xl font-bold tracking-tighter text-white">Digital FTE</span>
+          <span className="text-sm font-bold tracking-[0.2em] uppercase text-white/90">Digital FTE</span>
         </div>
-        <Link href="/dashboard" className="px-6 py-2.5 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 text-white text-sm font-semibold transition-all hover:scale-105 active:scale-95 flex items-center gap-2">
-          Agent Console <ArrowRight size={16} />
+        <Link href="/dashboard" className="text-xs font-bold tracking-widest uppercase py-2 px-4 border border-white/10 rounded hover:bg-white/5 transition-all flex items-center gap-3">
+          Console <ArrowRight size={12} />
         </Link>
       </nav>
 
-      <main className="relative z-10 pt-32 pb-20 px-6 max-w-6xl mx-auto grid lg:grid-cols-2 gap-16 items-center min-h-screen">
+      <main className="relative z-10 pt-40 pb-20 px-6 max-w-5xl mx-auto flex flex-col items-center">
         
-        {/* Left: Content */}
-        <div className="animate-reveal">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-[10px] uppercase tracking-[0.2em] font-bold text-indigo-300 mb-8 overflow-hidden">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-            </span>
-            SYSTEMS ONLINE • REVISION 2.1
-          </div>
-
-          <h1 className="text-5xl md:text-7xl font-bold text-white leading-tight mb-8">
-            The World's First <br/>
-            <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">Living CRM</span>
-          </h1>
-
-          <p className="text-xl text-slate-400 mb-10 leading-relaxed max-w-xl">
-             We deliver autonomous customer success pipelines that don't just store data—they think, respond, and act. 24/7 intelligence for enterprise scale.
-          </p>
-
-          <div className="grid grid-cols-2 gap-6 mb-12">
-            <div className="flex items-center gap-3 text-slate-300">
-               <ShieldCheck className="text-indigo-400" size={20} />
-               <span className="text-sm font-medium">SOC2 Compliant</span>
-            </div>
-            <div className="flex items-center gap-3 text-slate-300">
-               <Globe className="text-indigo-400" size={20} />
-               <span className="text-sm font-medium">Global Delivery</span>
-            </div>
-          </div>
+        {/* Minimal Badge */}
+        <div className="inline-flex items-center gap-3 px-4 py-1.5 rounded-full border border-white/5 bg-white/[0.02] text-[10px] uppercase tracking-[0.3em] font-medium text-white/40 mb-12 animate-reveal">
+          <span className="relative flex h-1.5 w-1.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white/20 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-white/40"></span>
+          </span>
+          Autonomous Instance // v.2.4
         </div>
 
-        {/* Right: Form */}
-        <div className="animate-reveal overflow-hidden" style={{ animationDelay: '0.2s' }}>
-          <div className="glass-panel p-1 rounded-[2rem]">
-            <div className="bg-slate-900/40 rounded-[1.8rem] p-8 md:p-10 border border-white/5">
+        {/* Headline: Clean & Brutalist */}
+        <div className="text-center mb-16 animate-reveal" style={{ animationDelay: '0.1s' }}>
+          <h1 className="text-4xl md:text-6xl font-black text-white leading-tight mb-6 tracking-tight">
+            INTELLIGENT <br/>
+            <span className="text-white/30">OPERATIONAL SCALE</span>
+          </h1>
+          <p className="text-base md:text-lg text-white/40 max-w-xl mx-auto leading-relaxed font-medium">
+            Deploy cognitive customer success pipelines. <br/>
+            Automated reasoning for the high-frequency enterprise.
+          </p>
+        </div>
+
+        {/* Form Section: Minimal Glass */}
+        <div className="w-full max-w-lg animate-reveal" style={{ animationDelay: '0.2s' }}>
+          <div className="border border-white/10 rounded-2xl bg-white/[0.01] p-1 backdrop-blur-sm">
+            <div className="bg-black/40 rounded-[calc(1rem-2px)] p-8 md:p-10">
               
               {status.type === 'success' ? (
-                <div className="py-12 flex flex-col items-center text-center space-y-6">
-                  <div className="w-16 h-16 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center animate-bounce">
-                    <ShieldCheck size={32} />
+                <div className="py-10 flex flex-col items-center text-center animate-reveal">
+                  <div className="w-12 h-12 rounded border border-white/20 flex items-center justify-center mb-6">
+                    <Fingerprint size={20} className="text-white/60" />
                   </div>
-                  <h3 className="text-3xl font-bold text-white italic">"Understood."</h3>
-                  <div className="p-4 bg-white/5 rounded-xl border border-white/5 text-slate-300 text-sm italic leading-relaxed">
+                  <h3 className="text-lg font-bold text-white uppercase tracking-widest mb-4">Transmission Logged</h3>
+                  <div className="p-5 bg-white/[0.02] border border-white/5 rounded-lg text-white/50 text-[13px] leading-relaxed font-mono">
                     {status.response}
                   </div>
                   <button 
                     onClick={() => setStatus({type:'idle'})}
-                    className="mt-6 px-8 py-3 rounded-full bg-white/10 hover:bg-white/20 text-white text-sm font-bold transition-all"
+                    className="mt-10 text-[10px] uppercase font-bold tracking-[0.2em] text-white/40 underline hover:text-white transition-colors"
                   >
-                    Open New Session
+                    Initialize New Request
                   </button>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-6">
-                  <div className="grid md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                       <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Identity</label>
+                <form onSubmit={handleSubmit} className="space-y-8">
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                       <label className="text-[10px] uppercase tracking-widest font-bold text-white/30 px-1">Identity</label>
                        <input 
-                         type="text" required placeholder="Full Name"
-                         className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-600"
+                         type="text" required placeholder="User-01"
+                         className="w-full bg-transparent border-b border-white/10 px-1 py-3 text-sm text-white focus:outline-none focus:border-white/40 transition-all placeholder:text-white/10"
                          value={formData.name} onChange={e=>setFormData(p=>({...p, name: e.target.value}))}
                        />
                     </div>
-                    <div className="space-y-2">
-                       <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Terminal</label>
+                    <div className="space-y-3">
+                       <label className="text-[10px] uppercase tracking-widest font-bold text-white/30 px-1">Network</label>
                        <input 
-                         type="email" required placeholder="Professional Email"
-                         className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-600"
+                         type="email" required placeholder="name@domain.com"
+                         className="w-full bg-transparent border-b border-white/10 px-1 py-3 text-sm text-white focus:outline-none focus:border-white/40 transition-all placeholder:text-white/10"
                          value={formData.email} onChange={e=>setFormData(p=>({...p, email: e.target.value}))}
                        />
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Objective</label>
+                  <div className="space-y-3">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-white/30 px-1">Classification</label>
                     <input 
-                      type="text" placeholder="Subject of inquiry"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all placeholder:text-slate-600"
+                      type="text" placeholder="Objective summary"
+                      className="w-full bg-transparent border-b border-white/10 px-1 py-3 text-sm text-white focus:outline-none focus:border-white/40 transition-all placeholder:text-white/10"
                       value={formData.subject} onChange={e=>setFormData(p=>({...p, subject: e.target.value}))}
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] uppercase tracking-widest font-bold text-slate-500 ml-1">Manifest</label>
+                  <div className="space-y-3">
+                    <label className="text-[10px] uppercase tracking-widest font-bold text-white/30 px-1">Data Payload</label>
                     <textarea 
-                      required placeholder="Describe your operational needs..."
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-5 py-4 text-sm text-white focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all min-h-[140px] placeholder:text-slate-600"
+                      required placeholder="Enter operational request details..."
+                      className="w-full bg-transparent border-b border-white/10 px-1 py-3 text-sm text-white focus:outline-none focus:border-white/40 transition-all min-h-[100px] resize-none placeholder:text-white/10"
                       value={formData.message} onChange={e=>setFormData(p=>({...p, message: e.target.value}))}
                     />
                   </div>
@@ -155,25 +145,41 @@ export default function Home() {
                   <button 
                     type="submit"
                     disabled={!isValid || status.type === 'loading'}
-                    className="w-full py-4 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-sm shadow-xl shadow-indigo-600/20 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-50 flex items-center justify-center gap-3 mt-4"
+                    className="w-full py-4 rounded bg-white text-black font-black text-[11px] uppercase tracking-[0.3em] overflow-hidden hover:bg-slate-200 active:scale-95 transition-all disabled:opacity-20 mt-4 shadow-xl shadow-white/5"
                   >
-                    {status.type === 'loading' ? <Loader2 className="animate-spin" size={20} /> : <>Initialize Intelligence Sequence <Sparkles size={18} /></>}
+                    {status.type === 'loading' ? <Loader2 className="animate-spin mx-auto" size={16} /> : "Transmit Process"}
                   </button>
                   
                   {status.type === 'error' && (
-                    <p className="text-center text-xs text-red-400 font-medium bg-red-400/10 py-3 rounded-lg border border-red-400/20">
+                    <div className="p-3 border border-red-500/20 bg-red-500/5 text-[10px] font-bold text-red-500/60 text-center uppercase tracking-widest">
                       {status.message}
-                    </p>
+                    </div>
                   )}
                 </form>
               )}
             </div>
           </div>
         </div>
+
+        {/* Minimal Proof Points */}
+        <div className="mt-24 grid grid-cols-3 gap-12 border-t border-white/5 pt-12 animate-reveal" style={{ animationDelay: '0.3s' }}>
+           <div className="flex flex-col gap-2">
+             <span className="text-[10px] uppercase tracking-widest font-bold text-white/20">Protocol</span>
+             <span className="text-xs font-bold text-white/60 flex items-center gap-2"><Shield size={12} /> SSL-256</span>
+           </div>
+           <div className="flex flex-col gap-2">
+             <span className="text-[10px] uppercase tracking-widest font-bold text-white/20">Response</span>
+             <span className="text-xs font-bold text-white/60 flex items-center gap-2"><Activity size={12} /> &lt; 200ms</span>
+           </div>
+           <div className="flex flex-col gap-2">
+             <span className="text-[10px] uppercase tracking-widest font-bold text-white/20">Uptime</span>
+             <span className="text-xs font-bold text-white/60 tracking-widest">99.9%</span>
+           </div>
+        </div>
       </main>
 
-      <footer className="relative z-10 w-full py-12 text-center text-slate-500 text-xs">
-        <p className="tracking-widest uppercase">© {new Date().getFullYear()} Digital FTE Factory • Autonomous Operations Active</p>
+      <footer className="py-12 text-center text-[10px] tracking-[0.5em] text-white/10 font-bold uppercase overflow-hidden">
+        Digital FTE Factory // 2026 Internal Utility
       </footer>
     </div>
   );
