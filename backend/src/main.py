@@ -164,15 +164,7 @@ async def lifespan(app: FastAPI):
 
     # 🚀 Start Digital FTE Living Agent (24/7 Autonomous Brain)
     from src.services.living_agent import living_agent
-    import threading
-
-    def run_agent_in_thread():
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(living_agent.start_working_247())
-
-    agent_thread = threading.Thread(target=run_agent_in_thread, daemon=True)
-    agent_thread.start()
+    asyncio.create_task(living_agent.start_working_247())
 
     logger.info("Digital FTE Agent API startup complete")
 

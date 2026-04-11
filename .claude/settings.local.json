@@ -26,7 +26,9 @@
       "Bash(.specify/scripts/bash/check-prerequisites.sh:*)",
       "Bash(mkdir:*)",
       "Bash(sp.analyze:*)",
-      "Bash(pwsh:*)"
+      "Bash(pwsh:*)",
+      "Bash(netstat:*)",
+      "Bash(powershell:*)"
     ]
   }
 }
