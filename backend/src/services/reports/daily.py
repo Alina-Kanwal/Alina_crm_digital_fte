@@ -9,6 +9,7 @@ from sqlalchemy import func, desc
 from src.services.database import SessionLocal
 from src.models.sentiment_record import SentimentRecord
 from src.models.support_ticket import SupportTicket
+from src.models.message import Message
 
 logger = logging.getLogger(__name__)
 

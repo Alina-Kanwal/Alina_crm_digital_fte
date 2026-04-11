@@ -13,34 +13,36 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Load environment variables
-load_dotenv()
-
 _RAW_DATABASE_URL = os.getenv(
     "DATABASE_URL",
     "postgresql://dte_user:dte_password@localhost:5432/dte_db"
 )
 
 def _get_clean_sync_url(_url: str):
-    """Sanitize and return sync connection config for psycopg2."""
+    """Sanitize and return sync connection config for psycopg2.
+    Strips all query params (channel_binding, sslmode etc.) that belong in connect_args.
+    """
     if not _url or "sqlite" in _url:
         return _url or "sqlite:///./test.db", {}
-        
-    import re
-    # Extract base part up to the first '?'
+
+    # Strip all query params
     clean_base = _url.split('?')[0]
     # Ensure sync protocol
     sync_url = clean_base.replace("postgresql+asyncpg://", "postgresql://")
     if not sync_url.startswith("postgresql://"):
         sync_url = f"postgresql://{sync_url}"
-    
-    # Check for SSL requirement
-    is_ssl = "sslmode=require" in _url.lower() or "ssl=true" in _url.lower()
-    
+
+    # Check for SSL requirement (Neon always needs SSL)
+    is_ssl = (
+        "sslmode=require" in _url.lower()
+        or "ssl=true" in _url.lower()
+        or "neon.tech" in _url.lower()
+    )
+
     sync_args = {}
     if is_ssl:
         sync_args["sslmode"] = "require"
-        
+
     return sync_url, sync_args
 
 DATABASE_URL, SYNC_CONNECT_ARGS = _get_clean_sync_url(_RAW_DATABASE_URL)
