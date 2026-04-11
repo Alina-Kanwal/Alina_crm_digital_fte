@@ -20,28 +20,28 @@ report_generator = DailyReportGenerator()
 
 @router.get("/live-feed")
 async def get_live_activity_feed(
-    limit: int = Query(10, ge=1, le=50),
-    db: AsyncSession = Depends(get_async_db_session)
+    limit: int = Query(10, ge=1, le=50)
 ):
     """
     Retrieve the most recent autonomous activities from the audit logs.
     Used for the live 'Digital FTE Terminal' in the frontend.
     """
     try:
-        stmt = select(AuditLog).order_by(desc(AuditLog.created_at)).limit(limit)
-        result = await db.execute(stmt)
-        logs = result.scalars().all()
-        
-        return [
-            {
-                "id": log.id,
-                "action": log.action_type.value,
-                "message": log.message,
-                "timestamp": log.created_at.isoformat(),
-                "entity_type": log.entity_type
-            }
-            for log in logs
-        ]
+        async with get_async_db_session() as db:
+            stmt = select(AuditLog).order_by(desc(AuditLog.created_at)).limit(limit)
+            result = await db.execute(stmt)
+            logs = result.scalars().all()
+            
+            return [
+                {
+                    "id": log.id,
+                    "action": log.action_type.value,
+                    "message": log.message,
+                    "timestamp": log.created_at.isoformat(),
+                    "entity_type": log.entity_type
+                }
+                for log in logs
+            ]
     except Exception as e:
         logger.error(f"Error in live-feed endpoint: {e}")
         return []
