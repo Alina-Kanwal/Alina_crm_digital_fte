@@ -39,3 +39,10 @@ isort>=5.13.2
 
 # Coverage
 pytest-cov>=4.1.0
+
+# Additional Dependencies
+kafka-python>=2.0.2
+backoff>=2.0.0
+
+# Utilities
+email-validator>=2.0.0
