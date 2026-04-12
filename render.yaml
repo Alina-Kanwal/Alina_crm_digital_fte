@@ -3,23 +3,27 @@ services:
     name: Alina_crm_digital_fte
     env: python
     region: singapore
-    branch: 001-digital-fte-agent
+    branch: main
     rootDir: backend
     buildCommand: "pip install -r requirements.txt"
-    # Gunicorn with Uvicorn workers for production reliability
-    startCommand: "gunicorn src.main:app -w 4 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT"
+    # Gunicorn with Uvicorn workers for async FastAPI
+    startCommand: "gunicorn src.main:app -w 2 -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --timeout 120"
     plan: free
     envVars:
       - key: DATABASE_URL
-        # Placeholder/Existing Neon URL - should be managed in Render Dashboard
+        # Clean Neon URL — no channel_binding (asyncpg strips query params internally)
         value: postgresql://neondb_owner:npg_jcNGEM0ghA3n@ep-cool-math-anbou7jb-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require
       - key: ENVIRONMENT
         value: production
       - key: PYTHON_VERSION
         value: "3.11.0"
+      - key: ALLOW_ORIGINS
+        value: "https://alina-crm-digital-fte.vercel.app,https://digital-fte-webform.vercel.app"
       - key: GROQ_API_KEY
-        sync: false # Must be set in Render dashboard for security
+        sync: false  # Set this in Render Dashboard → Environment tab
       - key: GROQ_MODEL
         value: "groq/llama-3.3-70b-versatile"
       - key: LOG_LEVEL
         value: "info"
+      - key: WORKERS
+        value: "2"

@@ -9,12 +9,23 @@ import os
 import logging
 from contextlib import contextmanager, asynccontextmanager
 from typing import AsyncGenerator, Generator, Optional
+from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Session, sessionmaker
+
+# Load .env for local development (no-op on Render where env vars are injected)
+try:
+    from dotenv import load_dotenv
+    # Try loading from project root (2 levels up from this file)
+    _env_path = Path(__file__).resolve().parent.parent.parent.parent / '.env'
+    if _env_path.exists():
+        load_dotenv(dotenv_path=_env_path)
+except ImportError:
+    pass
 
 # Database URL from environment
 _RAW_DATABASE_URL = os.getenv(
@@ -23,29 +34,42 @@ _RAW_DATABASE_URL = os.getenv(
 )
 
 def _get_clean_urls(_url: str):
-    """Sanitize and return both async and sync connection configs."""
-    import re
+    """Sanitize and return both async and sync connection configs.
     
-    # Extract base part up to the first '?'
+    Strips query params that asyncpg/psycopg2 don't support:
+    - asyncpg: needs ssl=True in connect_args (not sslmode=require in URL)
+    - psycopg2: needs sslmode=require in connect_args (not in URL for Neon)
+    - Strips channel_binding=require (not asyncpg-supported)
+    """
+    # Extract base part (strip all query params)
     clean_base = _url.split('?')[0]
     
     # Determine if SSL is needed from the original URL
-    is_ssl = "sslmode=require" in _url.lower() or "ssl=true" in _url.lower()
+    is_ssl = (
+        "sslmode=require" in _url.lower()
+        or "ssl=true" in _url.lower()
+        or "neon.tech" in _url.lower()  # Neon always needs SSL
+    )
     
-    # Async Config
-    async_url = clean_base if "postgresql+asyncpg" in clean_base else clean_base.replace("postgresql://", "postgresql+asyncpg://")
+    # Async Config — use postgresql+asyncpg protocol
+    if "postgresql+asyncpg" in clean_base:
+        async_url = clean_base
+    elif clean_base.startswith("postgresql://"):
+        async_url = clean_base.replace("postgresql://", "postgresql+asyncpg://", 1)
+    else:
+        async_url = clean_base
+    
     async_args = {}
     if is_ssl:
         async_args["ssl"] = True
     
-    # Sync Config
-    sync_url = clean_base.replace("postgresql+asyncpg://", "postgresql://")
+    # Sync Config — use plain postgresql:// protocol for psycopg2
+    sync_url = async_url.replace("postgresql+asyncpg://", "postgresql://", 1)
     sync_args = {}
     if is_ssl:
         sync_args["sslmode"] = "require"
     
-    # Debug (will show in logs)
-    print(f"DB CONFIG: async_url={async_url.split('@')[-1]}, sync_url={sync_url.split('@')[-1]}")
+    logger.info(f"DB CONFIG: host={async_url.split('@')[-1].split('/')[0]}, ssl={is_ssl}")
     
     return async_url, async_args, sync_url, sync_args
 
