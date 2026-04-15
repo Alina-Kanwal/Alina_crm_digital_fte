@@ -14,6 +14,7 @@ from src.models.task import Task
 from src.models.audit_log import AuditLog, AuditActionType
 from src.models.persisted_message import PersistedMessage, MessageStatus
 from src.models.dlq_entry import DLQEntry
+from src.models.message import Message
 
 __all__ = [
     "Base",
@@ -33,4 +34,5 @@ __all__ = [
     "PersistedMessage",
     "MessageStatus",
     "DLQEntry",
+    "Message",
 ]
