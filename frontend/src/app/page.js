@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { ArrowRight, Loader2, PlayCircle, Bot, Send, Check } from "lucide-react";
+import { ArrowRight, Loader2, PlayCircle, Send, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+
+import Image from "next/image";
 
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 20 },
@@ -90,13 +92,19 @@ export default function Home() {
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full px-6 py-5 md:px-12 flex justify-between items-center glass-panel sticky top-0 z-40 border-b-0 shadow-sm"
+        className="w-full px-6 py-4 md:px-12 flex justify-between items-center glass-panel sticky top-0 z-40 border-b-0 shadow-sm"
       >
         <div className="flex items-center gap-3">
-          <div className="bg-text-primary p-1.5 rounded flex items-center justify-center shadow-md">
-            <Bot className="text-background" size={16} />
+          <div className="relative w-9 h-9 flex items-center justify-center p-0.5">
+            <Image 
+              src="/brand/logo.png" 
+              alt="Digital FTE Logo" 
+              width={36} 
+              height={36} 
+              className="object-contain"
+            />
           </div>
-          <span className="font-serif text-lg font-semibold tracking-tight text-text-primary">Digital FTE</span>
+          <span className="font-serif text-xl font-semibold tracking-tight text-text-primary">Digital FTE</span>
         </div>
         <Link href="/dashboard" className="text-sm font-medium text-text-muted hover:text-text-primary transition-colors flex items-center gap-2 group">
           Go to Console <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
