@@ -5,7 +5,13 @@ import Link from "next/link";
 import { ArrowRight, Loader2, PlayCircle, Send, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
-import Image from "next/image";
+const DigitalFTELogo = () => (
+  <div className="relative w-10 h-10 flex items-center justify-center bg-text-primary rounded-xl shadow-inner border border-white/5 group-hover:scale-105 transition-transform duration-500">
+     <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_30%,rgba(255,255,255,0.1),transparent)]"></div>
+     <span className="relative font-serif text-background text-xl font-semibold tracking-tighter">D</span>
+     <div className="absolute bottom-2 right-2 w-1.5 h-1.5 rounded-full bg-accent shadow-[0_0_8px_var(--accent)]"></div>
+  </div>
+);
 
 const fadeUpVariant = {
   hidden: { opacity: 0, y: 20 },
@@ -94,17 +100,9 @@ export default function Home() {
         transition={{ duration: 0.5 }}
         className="w-full px-6 py-4 md:px-12 flex justify-between items-center glass-panel sticky top-0 z-40 border-b-0 shadow-sm"
       >
-        <div className="flex items-center gap-3">
-          <div className="relative w-9 h-9 flex items-center justify-center p-0.5">
-            <Image 
-              src="/brand/logo.png" 
-              alt="Digital FTE Logo" 
-              width={36} 
-              height={36} 
-              className="object-contain"
-            />
-          </div>
-          <span className="font-serif text-xl font-semibold tracking-tight text-text-primary">Digital FTE</span>
+        <div className="flex items-center gap-3 group cursor-pointer">
+          <DigitalFTELogo />
+          <span className="font-serif text-2xl font-semibold tracking-tight text-text-primary">Digital FTE</span>
         </div>
         <Link href="/dashboard" className="text-sm font-medium text-text-muted hover:text-text-primary transition-colors flex items-center gap-2 group">
           Go to Console <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
