@@ -3,53 +3,28 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.24.0
 gunicorn>=21.2.0
 
-# AI/ML
-openai-agents==0.0.14
-openai>=1.75.0
+# AI/ML - Groq via LiteLLM
 litellm>=1.40.0
+openai>=1.75.0
 
-# Email Validation
+# Pydantic with email
 pydantic[email]>=2.5.0
+email-validator>=2.0.0
 
-# Database
-psycopg2-binary>=2.9.9
+# Database - both async (asyncpg) and sync (psycopg2-binary) drivers needed
 asyncpg>=0.29.0
+psycopg2-binary>=2.9.9
 sqlalchemy>=2.0.23
 alembic>=1.13.1
 pgvector>=0.2.0
 
-# Testing
-pytest>=7.4.3
-pytest-asyncio>=0.23.2
-httpx>=0.25.2
+# Monitoring (used directly in main.py)
+prometheus-client>=0.19.0
 
 # Utilities
 python-multipart>=0.0.6
-redis>=4.6.0
+python-dotenv>=1.0.0
 cachetools>=5.3.3
-
-# Monitoring & Metrics
-prometheus-client>=0.19.0
-
-# OpenTelemetry (Real Distributed Tracing)
-opentelemetry-api>=1.0.0
-opentelemetry-sdk>=1.0.0
-opentelemetry-instrumentation-fastapi>=0.0.0
-opentelemetry-instrumentation-sqlalchemy>=0.0.0
-opentelemetry-exporter-console>=1.0.0
-
-# Linting & Formatting
-black>=23.12.0
-flake8>=7.0.0
-mypy>=1.8.0
-isort>=5.13.2
-
-# Coverage
-pytest-cov>=4.1.0
-
-# Additional Dependencies
-kafka-python>=2.0.2
 backoff>=2.0.0
-
-# Utilities
-email-validator>=2.0.0
+httpx>=0.25.2
+cryptography>=42.0.0

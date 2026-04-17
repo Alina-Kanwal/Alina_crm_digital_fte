@@ -6,7 +6,7 @@ import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc
-from src.services.database import SessionLocal
+from src.database.connection import SessionLocal
 from src.models.sentiment_record import SentimentRecord
 from src.models.support_ticket import SupportTicket
 from src.models.message import Message
@@ -230,28 +230,25 @@ class DailyReportGenerator:
         try:
             db = SessionLocal()
 
-            # Get negative sentiment messages with their tickets
+            # Fetch recent negative messages directly (no join to SupportTicket needed)
             negative_messages = db.query(Message).join(
                 SentimentRecord,
-                Message.id == SentimentRecord.message_id
-            ).join(
-                SupportTicket,
-                Message.thread_id == SupportTicket.id
+                Message.id == SentimentRecord.message_id,
+                isouter=True
             ).filter(
                 SentimentRecord.sentiment == 'negative',
                 SentimentRecord.analyzed_at >= start_date,
                 SentimentRecord.analyzed_at < end_date
             ).order_by(
                 SentimentRecord.analyzed_at.desc()
-            ).limit(limit * 3).all()  # Get more to aggregate
+            ).limit(limit * 3).all()
 
             db.close()
 
-            # Aggregate by topic (simplified: group by ticket title keywords)
+            # Aggregate by topic
             complaint_topics = {}
             for msg in negative_messages:
-                # Simple keyword extraction from ticket/message
-                content = msg.content or msg.ticket.title or ""
+                content = msg.content or ""
                 keywords = self._extract_complaint_keywords(content)
 
                 for keyword in keywords:
@@ -325,19 +322,19 @@ class DailyReportGenerator:
         try:
             db = SessionLocal()
 
-            # Get sentiment by channel
+            # Query tickets grouped by channel and sentiment (SentimentRecord has ticket_id)
             channel_sentiment = db.query(
-                Message.channel,
+                SupportTicket.channel,
                 SentimentRecord.sentiment,
                 func.count(SentimentRecord.id).label('count')
             ).join(
                 SentimentRecord,
-                Message.id == SentimentRecord.message_id
+                SupportTicket.id == SentimentRecord.ticket_id
             ).filter(
                 SentimentRecord.analyzed_at >= start_date,
                 SentimentRecord.analyzed_at < end_date
             ).group_by(
-                Message.channel,
+                SupportTicket.channel,
                 SentimentRecord.sentiment
             ).all()
 

@@ -24,7 +24,7 @@ try:
     from opentelemetry import trace
     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
     from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import ConsoleSpanExporter
+    from opentelemetry.sdk.trace.export import ConsoleSpanExporter, SimpleSpanProcessor
     from opentelemetry.sdk.resources import Resource
     OPENTELEMETRY_AVAILABLE = True
 except ImportError:
@@ -100,7 +100,7 @@ if OPENTELEMETRY_AVAILABLE:
         "service.version": "1.0.0",
     })
     tracer_provider = TracerProvider(resource=resource)
-    tracer_provider.add_span_processor(ConsoleSpanExporter())
+    tracer_provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
     trace.set_tracer_provider(tracer_provider)
 
     # Instrument FastAPI for tracing

@@ -13,7 +13,14 @@ from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from src.database.connection import check_db_health, get_db_pool_stats
-from src.kafka import get_producer
+
+# Kafka producer import with fallback
+try:
+    from src.kafka.producer import get_producer
+except ImportError:
+    # Fallback if kafka.producer module has issues
+    def get_producer():
+        return None
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,21 @@
 
 @layer base {
   :root {
-    /* Import Design Tokens */
+    /* Theme Variables */
+    --background: #FAF9F7;
+    --surface: #FFFFFF;
+    --text-primary: #1A1C20;
+    --text-secondary: #4b5563;
+    --text-muted: #63656A;
+    --text-inverse: #ffffff;
+    --border: rgba(0,0,0,0.08);
+    --accent-light: #e1c6b5;
+    --accent: #c19275;
+    --accent-dark: #35221b;
+    --glass-bg: rgba(255, 255, 255, 0.7);
+    --glass-border: rgba(0, 0, 0, 0.05);
+
+    /* Original Design Tokens (Legacy Support/Fixed Colors) */
     --color-neutral-0: #fafafa;
     --color-neutral-50: #f9fafb;
     --color-neutral-100: #f3f4f6;
@@ -21,11 +35,25 @@
     --color-neutral-700: #374151;
     --color-neutral-800: #1f2937;
     --color-neutral-900: #111827;
+  }
 
-    --color-text-primary: #0f172a;
-    --color-text-secondary: #4b5563;
-    --color-text-tertiary: #6b7280;
-    --color-text-inverse: #ffffff;
+  /* Dark Theme Configuration */
+  .dark {
+    --background: #0f1115;
+    --surface: #1A1C20;
+    --text-primary: #fcfcfc;
+    --text-secondary: #a1a3a8;
+    --text-muted: #84878E;
+    --text-inverse: #1A1C20;
+    --border: rgba(255,255,255,0.08);
+    --accent-light: #4a3e37;
+    --accent: #c19275;
+    --accent-dark: #e1c6b5;
+    --glass-bg: rgba(26, 28, 32, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.05);
+  }
+
+  :root, .dark {
 
     --color-primary-50: #0f172a;
     --color-primary-100: #1e40af;
@@ -95,7 +123,9 @@
   }
 
   body {
-    @apply bg-[var(--color-neutral-0)] text-[var(--color-text-primary)] antialiased;
+    @apply antialiased transition-colors duration-300;
+    background-color: var(--background);
+    color: var(--text-primary);
     font-feature-settings: "rlig" 1, "calt" 1;
     font-family: var(--font-sans);
     line-height: 1.6;
@@ -106,7 +136,7 @@
 
   /* Professional Border System */
   .anthropic-border {
-    border: 1px solid var(--color-border-light);
+    border: 1px solid var(--border);
   }
 
   .anthropic-shadow {
@@ -130,18 +160,21 @@
     box-shadow: var(--shadow-xl);
   }
 
-  /* Glass Panel Effect */
+  /* Glass Panel Effect for Both Modes */
   .glass-panel {
-    background: rgba(255, 255, 255, 0.7);
-    backdrop-filter: blur(16px);
-    border: 1px solid rgba(0, 0, 0, 0.06);
+    background: var(--glass-bg);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    border: 1px solid var(--glass-border);
+    transition: background 0.3s ease, border 0.3s ease;
   }
 
-  /* Professional Input Styling */
+  /* Components specific fixes */
   .input-anthropic {
-    @apply bg-white border border-gray-200 px-4 py-3 rounded-md
-            focus:outline-none focus:ring-2 focus:ring-gray-300
-            transition-all duration-150 ease-in;
+    @apply bg-surface border border-[var(--border)] px-4 py-3 rounded-md
+            focus:outline-none focus:ring-2 focus:ring-[var(--accent)]
+            transition-all duration-150 ease-in text-text-primary;
+    background-color: var(--surface);
     font-family: var(--font-sans);
     font-size: 1rem;
     line-height: 1.5;
