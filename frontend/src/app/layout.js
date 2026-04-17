@@ -13,6 +13,9 @@ const playfair = Playfair_Display({
   display: 'swap',
 });
 
+import { ThemeProvider } from "@/components/ThemeProvider";
+import { ThemeToggle } from "@/components/ThemeToggle";
+
 export const metadata = {
   title: "Digital FTE — Intelligent Customer Success",
   description: "Enterprise CRM & Autonomous Agent",
@@ -20,9 +23,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="en" className={`${inter.variable} ${playfair.variable}`}>
-      <body className="bg-background text-text antialiased min-h-screen flex flex-col">
-        {children}
+    <html lang="en" className={`${inter.variable} ${playfair.variable}`} suppressHydrationWarning>
+      <body className="bg-background text-text-primary antialiased min-h-screen flex flex-col transition-colors duration-300">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {children}
+          <ThemeToggle />
+        </ThemeProvider>
       </body>
     </html>
   );
