@@ -16,7 +16,7 @@ export default function CustomersPage() {
 
   const fetchCustomers = async () => {
     try {
-      const res = await fetch(`${BACKEND}/api/v1/crm/contacts?skip=0&limit=50`);
+      const res = await fetch(`${BACKEND}/api/v1/crm/customers?skip=0&limit=100`);
       if (res.ok) {
         setCustomers(await res.json());
       }
@@ -39,7 +39,7 @@ export default function CustomersPage() {
       const firstName = names[0];
       const lastName = names.slice(1).join(" ");
 
-      const res = await fetch(`${BACKEND}/api/v1/crm/contacts`, {
+      const res = await fetch(`${BACKEND}/api/v1/crm/customers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -66,8 +66,9 @@ export default function CustomersPage() {
     }
   };
 
-  const filteredCustomers = customers.filter(c => 
-    (c.name || "").toLowerCase().includes(search.toLowerCase()) || 
+  const filteredCustomers = (customers || []).filter(c => 
+    (c.first_name || "").toLowerCase().includes(search.toLowerCase()) || 
+    (c.last_name || "").toLowerCase().includes(search.toLowerCase()) || 
     (c.email || "").toLowerCase().includes(search.toLowerCase())
   );
 
@@ -133,12 +134,12 @@ export default function CustomersPage() {
               ) : filteredCustomers.length > 0 ? (
                 filteredCustomers.map((contact) => (
                   <tr key={contact.id} className="hover:bg-background/40 transition-colors">
-                    <td className="px-6 py-4 font-medium text-text">{contact.name}</td>
+                    <td className="px-6 py-4 font-medium text-text">{contact.first_name} {contact.last_name}</td>
                     <td className="px-6 py-4 text-text/80">{contact.email}</td>
-                    <td className="px-6 py-4 text-muted">{contact.company || contact.customer_metadata?.company || '—'}</td>
+                    <td className="px-6 py-4 text-muted">{contact.customer_metadata?.company || '—'}</td>
                     <td className="px-6 py-4">
-                      {contact.is_lead ? (
-                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[0.65rem] font-medium uppercase tracking-wider bg-accent/10 text-accent border border-accent/20">Lead</span>
+                      {contact.lead_score > 50 ? (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded text-[0.65rem] font-medium uppercase tracking-wider bg-accent/10 text-accent border border-accent/20">High Lead</span>
                       ) : (
                         <span className="inline-flex items-center px-2 py-0.5 rounded text-[0.65rem] font-medium uppercase tracking-wider bg-green-50 text-green-700 border border-green-200">Customer</span>
                       )}

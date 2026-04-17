@@ -31,18 +31,18 @@ export default function TasksPage() {
   }, [BACKEND]);
 
   const toggleTask = async (taskId, currentStatus) => {
-    const newStatus = currentStatus === 'completed' ? 'pending' : 'completed';
+    const newStatus = !currentStatus;
     
     // Optimistic UI update
     setTasks(prev => prev.map(t => 
-      t.id === taskId ? { ...t, status: newStatus } : t
+      t.id === taskId ? { ...t, is_completed: newStatus } : t
     ));
     
     try {
       const res = await fetch(`${BACKEND}/api/v1/crm/tasks/${taskId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status: newStatus })
+        body: JSON.stringify({ is_completed: newStatus })
       });
       if (!res.ok) throw new Error("Sync failed");
     } catch (err) {
@@ -63,7 +63,7 @@ export default function TasksPage() {
           title: formData.title,
           description: formData.description,
           priority: formData.priority,
-          status: "pending"
+          is_completed: false
         }),
       });
 
@@ -121,11 +121,11 @@ export default function TasksPage() {
         ) : tasks?.length > 0 ? (
           <div className="divide-y divide-border/50">
             {tasks.map((task) => {
-              const isCompleted = task.status === 'completed';
+              const isCompleted = task.is_completed;
               return (
                 <div key={task.id} className={`flex gap-4 p-6 hover:bg-background/40 transition-colors group ${isCompleted ? 'opacity-60' : ''}`}>
                   <button 
-                    onClick={() => toggleTask(task.id, task.status)}
+                    onClick={() => toggleTask(task.id, task.is_completed)}
                     className={`w-5 h-5 mt-0.5 rounded border flex items-center justify-center flex-shrink-0 transition-colors ${
                       isCompleted 
                       ? 'bg-text border-text text-surface' 
