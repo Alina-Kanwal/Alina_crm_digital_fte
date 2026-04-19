@@ -1,6 +1,6 @@
 """
-OpenAI GPT-4o integration for Digital FTE AI Customer Success Agent.
-Handles configuration and testing of OpenAI API connection.
+Groq/OpenAI integration for Digital FTE AI Customer Success Agent.
+Handles configuration and testing of LLM API connections, prioritizing Groq for high-speed inference.
 """
 
 import logging
@@ -17,22 +17,22 @@ class OpenAIClient:
 
     def __init__(self, api_key: Optional[str] = None, base_url: Optional[str] = None):
         """
-        Initialize AI client.
+        Initialize AI client, prioritizing Groq for free/high-speed tier.
 
         Args:
-            api_key: API key (if None, will try to get from environment)
-            base_url: Optional API base URL (defaults to Groq if specified in env)
+            api_key: API key (if None, will try GROQ_API_KEY then OPENAI_API_KEY)
+            base_url: Optional API base URL (defaults to GROQ_API_BASE if available)
         """
-        self.api_key = api_key or os.getenv('OPENAI_API_KEY')
-        self.base_url = base_url or os.getenv('OPENAI_BASE_URL')
-        self.model = os.getenv('OPENAI_MODEL', 'gpt-4o')
+        self.api_key = api_key or os.getenv('GROQ_API_KEY') or os.getenv('OPENAI_API_KEY')
+        self.base_url = base_url or os.getenv('GROQ_API_BASE') or os.getenv('OPENAI_BASE_URL')
+        self.model = os.getenv('GROQ_MODEL') or os.getenv('OPENAI_MODEL', 'llama-3.3-70b-versatile')
         self.client = None
         self.is_configured = False
 
         if self.api_key:
             self._configure_client()
         else:
-            logger.warning("No API key provided. Set OPENAI_API_KEY environment variable.")
+            logger.warning("No API key provided. Set GROQ_API_KEY or OPENAI_API_KEY environment variable.")
 
     def _configure_client(self):
         """Configure the AI client."""
@@ -52,10 +52,11 @@ class OpenAIClient:
                 try:
                     set_default_openai_key(self.api_key)
                 except Exception as e:
-                    logger.warning(f"Could not set default key for agents SDK: {e}")
+                    logger.debug(f"Could not set default key for agents SDK (expected if using Groq): {e}")
 
             self.is_configured = True
-            logger.info(f"AI Client configured successfully (model={self.model}, base_url={self.base_url})")
+            provider = "Groq" if "groq" in (self.base_url or "").lower() else "OpenAI"
+            logger.info(f"{provider} AI Client configured successfully (model={self.model})")
 
         except Exception as e:
             logger.error(f"Failed to configure AI client: {e}")

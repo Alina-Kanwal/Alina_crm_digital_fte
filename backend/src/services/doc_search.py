@@ -5,7 +5,7 @@ Implements semantic search over product documentation using PostgreSQL pgvector 
 import logging
 from typing import List, Dict, Any, Optional
 import numpy as np
-from src.services.database import SessionLocal
+from src.database.connection import SessionLocal
 from src.models.documentation import Documentation
 from src.services.cache_service import get_cache_service
 from src.utils.embeddings import generate_embedding, cosine_similarity

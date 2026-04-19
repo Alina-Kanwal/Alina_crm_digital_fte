@@ -7,7 +7,8 @@ with validation and defaults.
 
 import os
 from typing import Optional, List
-from pydantic import BaseSettings, Field, validator
+from pydantic_settings import BaseSettings
+from pydantic import Field, validator
 
 
 class Settings(BaseSettings):
@@ -37,7 +38,7 @@ class Settings(BaseSettings):
     MAX_OVERFLOW: int = Field(default=10, env="MAX_OVERFLOW")
 
     # OpenAI
-    OPENAI_API_KEY: str = Field(..., env="OPENAI_API_KEY")
+    OPENAI_API_KEY: Optional[str] = Field(default=None, env="OPENAI_API_KEY")
     OPENAI_MODEL: str = Field(default="gpt-4o", env="OPENAI_MODEL")
     OPENAI_MAX_TOKENS: int = Field(default=2000, env="OPENAI_MAX_TOKENS")
     OPENAI_TEMPERATURE: float = Field(default=0.7, env="OPENAI_TEMPERATURE")
@@ -64,9 +65,9 @@ class Settings(BaseSettings):
     GMAIL_POLL_INTERVAL_MINUTES: int = Field(default=5, env="GMAIL_POLL_INTERVAL_MINUTES")
 
     # Twilio WhatsApp
-    TWILIO_ACCOUNT_SID: str = Field(..., env="TWILIO_ACCOUNT_SID")
-    TWILIO_AUTH_TOKEN: str = Field(..., env="TWILIO_AUTH_TOKEN")
-    TWILIO_WHATSAPP_NUMBER: str = Field(..., env="TWILIO_WHATSAPP_NUMBER")
+    TWILIO_ACCOUNT_SID: Optional[str] = Field(default=None, env="TWILIO_ACCOUNT_SID")
+    TWILIO_AUTH_TOKEN: Optional[str] = Field(default=None, env="TWILIO_AUTH_TOKEN")
+    TWILIO_WHATSAPP_NUMBER: Optional[str] = Field(default=None, env="TWILIO_WHATSAPP_NUMBER")
     TWILIO_WEBHOOK_URL: str = Field(
         default="/api/v1/channels/whatsapp/webhook",
         env="TWILIO_WEBHOOK_URL",

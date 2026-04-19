@@ -233,7 +233,7 @@ class DailyReportGenerator:
             # Fetch recent negative messages directly (no join to SupportTicket needed)
             negative_messages = db.query(Message).join(
                 SentimentRecord,
-                Message.id == SentimentRecord.message_id,
+                Message.ticket_id == SentimentRecord.ticket_id,
                 isouter=True
             ).filter(
                 SentimentRecord.sentiment == 'negative',

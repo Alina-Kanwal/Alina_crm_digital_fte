@@ -65,9 +65,15 @@ async def readiness() -> JSONResponse:
 
     # Check database
     db_healthy = check_db_health()
+    db_info = {}
+    if db_healthy:
+        db_info["pool_stats"] = get_db_pool_stats()
+    else:
+        db_info["error"] = "Database connection failed"
+
     checks["database"] = {
         "status": "healthy" if db_healthy else "unhealthy",
-        "pool_stats": get_db_pool_stats() if db_healthy else None,
+        **db_info,
     }
 
     # Check Kafka producer (optional - doesn't fail readiness)
@@ -183,9 +189,15 @@ async def health() -> JSONResponse:
     # Check database
     try:
         db_healthy = check_db_health()
+        db_info = {}
+        if db_healthy:
+            db_info["pool_stats"] = get_db_pool_stats()
+        else:
+            db_info["error"] = "Database connection failed"
+
         checks["database"] = {
             "status": "healthy" if db_healthy else "unhealthy",
-            "pool_stats": get_db_pool_stats() if db_healthy else None,
+            **db_info,
         }
     except Exception as e:
         checks["database"] = {

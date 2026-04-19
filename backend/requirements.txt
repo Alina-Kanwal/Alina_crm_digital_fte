@@ -3,12 +3,14 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.24.0
 gunicorn>=21.2.0
 
-# AI/ML - Groq via LiteLLM
+# AI/ML - Groq Native & LiteLLM Bridge
+groq>=0.9.0
 litellm>=1.40.0
 openai>=1.75.0
 
-# Pydantic with email
+# Pydantic with settings
 pydantic[email]>=2.5.0
+pydantic-settings>=2.1.0
 email-validator>=2.0.0
 
 # Database - both async (asyncpg) and sync (psycopg2-binary) drivers needed

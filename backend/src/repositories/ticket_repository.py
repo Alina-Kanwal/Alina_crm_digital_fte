@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_
 from src.models.support_ticket import SupportTicket
 from src.models.customer import Customer
-from src.services.database import SessionLocal
+from src.database.connection import SessionLocal
 
 class TicketRepository:
     def __init__(self, db: Session):

@@ -11,7 +11,7 @@ export default function TasksPage() {
   const [formData, setFormData] = useState({ title: "", description: "", priority: "medium" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'https://alina-crm-digital-fte.onrender.com';
 
   const fetchTasks = async () => {
     try {

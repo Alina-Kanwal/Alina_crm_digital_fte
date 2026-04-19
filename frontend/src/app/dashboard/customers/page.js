@@ -12,7 +12,7 @@ export default function CustomersPage() {
   const [formData, setFormData] = useState({ name: "", email: "", company: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'https://alina-crm-digital-fte.onrender.com';
 
   const fetchCustomers = async () => {
     try {

@@ -1,6 +1,6 @@
 """
 Sentiment analysis service for Digital FTE AI Customer Success Agent.
-Analyzes customer sentiment in every interaction using OpenAI.
+Analyzes customer sentiment in every interaction using Groq (LPU Inference).
 """
 import logging
 from typing import Dict, List, Optional, Any
@@ -43,35 +43,35 @@ class SentimentAnalysisResult:
 
 class SentimentAnalyzer:
     """
-    Service for analyzing customer sentiment using OpenAI.
+    Service for analyzing customer sentiment using Groq.
 
     Per Constitution Principle XV:
     "System MUST analyze customer sentiment in every interaction"
     """
 
-    def __init__(self, openai_client=None):
+    def __init__(self, groq_client=None):
         """
         Initialize sentiment analyzer.
 
         Args:
-            openai_client: Optional OpenAI client (will be initialized if not provided)
+            groq_client: Optional Groq client (will be initialized if not provided)
         """
-        self.openai_client = openai_client
-        self.model = "gpt-4o"  # Using GPT-4o model
-        logger.info("Sentiment analyzer initialized")
+        self.groq_client = groq_client
+        self.model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        logger.info(f"Sentiment analyzer initialized with model: {self.model}")
 
     async def initialize(self):
         """Initialize sentiment analyzer dependencies."""
-        if not self.openai_client:
-            # Import OpenAI client
+        if not self.groq_client:
+            # Import Groq client
             try:
-                from openai import AsyncOpenAI
+                from groq import AsyncGroq
                 import os
-                api_key = os.getenv("OPENAI_API_KEY")
-                self.openai_client = AsyncOpenAI(api_key=api_key)
-                logger.info("OpenAI client initialized for sentiment analysis")
+                api_key = os.getenv("GROQ_API_KEY")
+                self.groq_client = AsyncGroq(api_key=api_key)
+                logger.info("Groq client initialized for sentiment analysis")
             except ImportError:
-                logger.warning("OpenAI not available, using mock sentiment analysis")
+                logger.warning("Groq not available, using mock sentiment analysis")
 
     async def analyze_sentiment(
         self,
@@ -91,15 +91,15 @@ class SentimentAnalyzer:
             SentimentAnalysisResult with sentiment and confidence
         """
         try:
-            if not self.openai_client:
+            if not self.groq_client:
                 # Fallback to simple keyword-based analysis
                 return await self._analyze_sentiment_fallback(message)
 
-            # Create prompt for OpenAI
+            # Create prompt for Groq
             prompt = self._create_sentiment_prompt(message, channel)
 
-            # Call OpenAI API
-            response = await self.openai_client.chat.completions.create(
+            # Call Groq API
+            response = await self.groq_client.chat.completions.create(
                 model=self.model,
                 messages=[
                     {
@@ -115,14 +115,14 @@ class SentimentAnalyzer:
                     },
                     {"role": "user", "content": prompt}
                 ],
-                temperature=0.3,  # Low temperature for consistent results
-                max_tokens=150,
+                temperature=0.1,  # Lower temperature for Groq
+                max_tokens=256,
                 response_format={"type": "json_object"}
             )
 
             # Parse response
             content = response.choices[0].message.content
-            result_data = self._parse_openai_response(content)
+            result_data = self._parse_groq_response(content)
 
             # Create result object
             sentiment = Sentiment(result_data.get('sentiment', 'neutral'))
@@ -158,7 +158,7 @@ class SentimentAnalyzer:
         channel: Optional[str]
     ) -> str:
         """
-        Create prompt for OpenAI sentiment analysis.
+        Create prompt for Groq sentiment analysis.
 
         Args:
             message: The message to analyze
@@ -180,12 +180,12 @@ class SentimentAnalyzer:
             f"- Satisfaction indicators (thank, great, works, etc.)"
         )
 
-    def _parse_openai_response(self, content: str) -> Dict[str, Any]:
+    def _parse_groq_response(self, content: str) -> Dict[str, Any]:
         """
-        Parse OpenAI response JSON content.
+        Parse Groq response JSON content.
 
         Args:
-            content: JSON string from OpenAI
+            content: JSON string from Groq
 
         Returns:
             Dictionary with parsed data
@@ -195,7 +195,7 @@ class SentimentAnalyzer:
             result_data = json.loads(content)
             return result_data
         except json.JSONDecodeError as e:
-            logger.error(f"Error parsing OpenAI JSON response: {e}")
+            logger.error(f"Error parsing Groq JSON response: {e}")
             return {
                 'sentiment': 'neutral',
                 'confidence': 0.5,
@@ -211,7 +211,7 @@ class SentimentAnalyzer:
         """
         Fallback sentiment analysis using keyword matching.
 
-        Used when OpenAI is not available.
+        Used when Groq is not available.
 
         Args:
             message: The message to analyze

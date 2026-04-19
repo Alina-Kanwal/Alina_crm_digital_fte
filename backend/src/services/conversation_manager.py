@@ -7,7 +7,7 @@ import logging
 import uuid
 from typing import Dict, List, Optional, Any
 from sqlalchemy.orm import Session
-from src.services.database import SessionLocal
+from src.database.connection import SessionLocal
 from src.models.conversation_thread import ConversationThread
 from src.models.message import Message
 from datetime import datetime, timedelta

@@ -39,7 +39,7 @@ export default function Home() {
   useEffect(() => {
     const fetchFeed = async () => {
       try {
-        const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'https://alina-crm-digital-fte.onrender.com';
         const res = await fetch(`${BACKEND}/api/v1/reports/live-feed?limit=5`);
         if (res.ok) {
            const data = await res.json();
@@ -60,7 +60,7 @@ export default function Home() {
     setStatus({ type: 'loading', message: '' });
     setIsProcessing(true);
 
-    const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'https://alina-crm-digital-fte.onrender.com';
 
     try {
       const res = await fetch(`${BACKEND}/api/v1/inquiries/webform`, {
