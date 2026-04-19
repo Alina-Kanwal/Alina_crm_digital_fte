@@ -12,7 +12,7 @@ services:
     envVars:
       - key: DATABASE_URL
         # Clean Neon URL — no channel_binding (asyncpg strips query params internally)
-        value: postgresql://neondb_owner:npg_jcNGEM0ghA3n@ep-cool-math-anbou7jb-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require
+        value: postgresql+asyncpg://neondb_owner:npg_jcNGEM0ghA3n@ep-cool-math-anbou7jb-pooler.c-6.us-east-1.aws.neon.tech/neondb?sslmode=require
       - key: ENVIRONMENT
         value: production
       - key: PYTHON_VERSION
