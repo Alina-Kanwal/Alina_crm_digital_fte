@@ -10,8 +10,17 @@ from groq import Groq
 
 logger = logging.getLogger(__name__)
 
-# Initialize Groq client
-groq_client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+# Initialize Groq client with fail-safe for environment variables
+_groq_api_key = os.getenv("GROQ_API_KEY")
+if not _groq_api_key:
+    logger.warning("GROQ_API_KEY not found in environment. AI Agent will be inactive.")
+    groq_client = None
+else:
+    try:
+        groq_client = Groq(api_key=_groq_api_key)
+    except Exception as e:
+        logger.error(f"Failed to initialize Groq client: {e}")
+        groq_client = None
 
 # Initialize supporting services
 from src.services.doc_search import DocumentSearchService
@@ -51,6 +60,8 @@ def escalate_to_human(reason: str, context: str) -> str:
 
 async def analyze_sentiment_internal(text: str) -> Dict[str, Any]:
     """Analyze customer sentiment using Groq."""
+    if not groq_client:
+        return {"sentiment": "neutral", "score": 0.0, "confidence": 0.0}
     try:
         prompt = f"Analyze the sentiment of the following customer support message. Provide a sentiment label (positive, neutral, negative) and a sentiment score between -1.0 and 1.0.\n\nMessage: {text}\n\nReturn ONLY a JSON object with 'sentiment' and 'score' keys."
         
@@ -142,6 +153,8 @@ Your goal is 100% accuracy and high customer satisfaction."""
 
     def process_inquiry(self, message: Dict, conversation_history: List[Dict] = None) -> Dict:
         """Process inquiry using Groq with Tool Calling."""
+        if not groq_client:
+             return self._get_fallback_response(message, "AI Client not initialized")
         try:
             messages = [
                 {"role": "system", "content": self.instructions},
