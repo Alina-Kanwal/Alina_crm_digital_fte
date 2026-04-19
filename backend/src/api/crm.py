@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from typing import List
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
-from src.services.database import get_db
+from src.database.connection import get_db_session as get_db
 from src.schemas.crm import (
     CustomerResponse, CustomerCreate,
     DealResponse, DealCreate, DealUpdate,

@@ -5,7 +5,7 @@ Notifies human support agents when escalations occur.
 import logging
 from typing import Dict, List, Optional, Any
 from datetime import datetime
-from src.services.database import SessionLocal
+from src.database.connection import SessionLocal
 from src.models.support_ticket import SupportTicket
 from src.models.customer import Customer
 from src.models.conversation_thread import ConversationThread

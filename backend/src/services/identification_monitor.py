@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
-from src.services.database import SessionLocal
+from src.database.connection import SessionLocal
 from src.models.customer import Customer
 from src.models.message import Message
 from src.models.conversation_thread import ConversationThread

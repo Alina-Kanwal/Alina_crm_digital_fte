@@ -9,7 +9,7 @@ from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session
 from pydantic import BaseModel, Field
 
-from src.services.database import get_db
+from src.database.connection import get_db
 from src.models.customer import Customer
 from src.models.support_ticket import SupportTicket
 from src.models.conversation_thread import ConversationThread

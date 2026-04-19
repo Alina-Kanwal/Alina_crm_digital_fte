@@ -9,7 +9,7 @@ export default function DashboardOverview() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'https://alina-crm-digital-fte.onrender.com';
 
   useEffect(() => {
     const fetchData = async () => {

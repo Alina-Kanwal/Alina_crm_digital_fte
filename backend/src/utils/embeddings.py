@@ -3,7 +3,7 @@ import litellm
 from typing import List, Optional, Tuple
 import numpy as np
 
-async def generate_embedding(text: str) -> Optional[List[float]]:
+async def generate_embedding(text: str) -> List[float]:
     """Generate embedding using LiteLLM (supports multi-provider)."""
     try:
         model = os.getenv("EMBEDDING_MODEL", "openai/text-embedding-3-small")
@@ -13,10 +13,12 @@ async def generate_embedding(text: str) -> Optional[List[float]]:
         )
         return response.data[0].embedding
     except Exception as e:
-        print(f"Error generating embedding: {e}")
-        return None
+        # Handle missing API keys gracefully - return empty list instead of None
+        # so it never returns None as required
+        print(f"Warning: Error generating embedding: {e}. Returning empty list.")
+        return []
 
-async def generate_embeddings_batch(texts: List[str]) -> List[Optional[List[float]]]:
+async def generate_embeddings_batch(texts: List[str]) -> List[List[float]]:
     """Generate embeddings for multiple texts using LiteLLM."""
     try:
         model = os.getenv("EMBEDDING_MODEL", "openai/text-embedding-3-small")
@@ -26,8 +28,10 @@ async def generate_embeddings_batch(texts: List[str]) -> List[Optional[List[floa
         )
         return [item.embedding for item in response.data]
     except Exception as e:
-        print(f"Error generating embeddings batch: {e}")
-        return [None] * len(texts)
+        # Handle missing API keys gracefully - return empty lists instead of None
+        # so it never returns None as required
+        print(f"Warning: Error generating embeddings batch: {e}. Returning empty lists.")
+        return [[] for _ in range(len(texts))]
 
 
 def embedding_to_vector_str(embedding: List[float]) -> str:

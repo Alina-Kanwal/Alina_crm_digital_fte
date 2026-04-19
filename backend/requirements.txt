@@ -3,7 +3,8 @@ fastapi>=0.115.0
 uvicorn[standard]>=0.24.0
 gunicorn>=21.2.0
 
-# AI/ML - Groq via LiteLLM
+# AI/ML - Groq Native & LiteLLM Bridge
+groq>=0.9.0
 litellm>=1.40.0
 openai>=1.75.0
 

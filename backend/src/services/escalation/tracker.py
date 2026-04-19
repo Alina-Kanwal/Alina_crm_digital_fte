@@ -7,7 +7,7 @@ from typing import Dict, List, Optional, Any
 from datetime import datetime, timedelta
 from sqlalchemy import func, desc
 from sqlalchemy.orm import Session
-from src.services.database import SessionLocal
+from src.database.connection import SessionLocal
 from src.models.support_ticket import SupportTicket
 
 logger = logging.getLogger(__name__)

@@ -33,6 +33,21 @@ _RAW_DATABASE_URL = os.getenv(
     "postgresql+asyncpg://dte_user:dte_password@localhost:5432/dte_db"
 )
 
+# Log the actual database URL being used (without credentials for security)
+if _RAW_DATABASE_URL:
+    # Parse URL to hide credentials in logs
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(_RAW_DATABASE_URL)
+        safe_url = f"{parsed.scheme}://{parsed.hostname}:{parsed.port}{parsed.path}"
+        if parsed.username:
+            safe_url = f"{parsed.scheme}://****:****@{parsed.hostname}:{parsed.port}{parsed.path}"
+        logger.info(f"Database URL configured: {safe_url}")
+    except Exception:
+        logger.info("Database URL configured (credentials hidden in logs)")
+else:
+    logger.warning("DATABASE_URL not set, using default")
+
 def _get_clean_urls(_url: str):
     """Sanitize and return both async and sync connection configs.
     
@@ -110,6 +125,18 @@ SessionLocal = sessionmaker(
     autocommit=False,
     autoflush=False,
 )
+
+
+def get_db() -> Generator[Session, None, None]:
+    """
+    Dependency to get database session.
+    Yields a session and ensures it's closed after use.
+    """
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 @contextmanager
@@ -201,9 +228,12 @@ def check_db_health() -> bool:
     """
     try:
         with sync_engine.connect() as conn:
-            conn.execute(text("SELECT 1"))
+            result = conn.execute(text("SELECT 1"))
+            result.fetchone()
+        logger.debug("Database health check passed")
         return True
-    except Exception:
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
         return False
 
 

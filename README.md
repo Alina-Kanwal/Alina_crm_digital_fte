@@ -6,7 +6,7 @@ A production-grade autonomous AI employee that works 24/7 as a Customer Success 
 
 This AI agent replaces human support staff by:
 - Processing customer inquiries from email, WhatsApp, and web forms
-- Understanding intent using natural language processing (OpenAI GPT-4o)
+- Understanding intent using natural language processing (Groq llama-3.3-70b)
 - Searching product documentation for accurate answers
 - Generating channel-appropriate responses (formal/email, casual/WhatsApp, semi-formal/web)
 - Maintaining cross-channel conversation history
@@ -17,7 +17,7 @@ This AI agent replaces human support staff by:
 ## Architecture
 
 - **Backend**: FastAPI (Python 3.11)
-- **AI Core**: OpenAI Agents SDK with custom function tools
+- **AI Core**: Groq Native API with autonomous Tool Calling
 - **Message Queue**: Apache Kafka for reliable message processing
 - **Database**: PostgreSQL 15 with pgvector extension for semantic search
 - **Frontend**: React/Next.js embeddable web support form
@@ -30,7 +30,7 @@ This AI agent replaces human support staff by:
 - Node.js 18+
 - PostgreSQL 15+ with pgvector extension
 - Docker & Kubernetes (for deployment)
-- OpenAI API key
+- Groq API key
 - Gmail API credentials (sandbox)
 - Twilio WhatsApp sandbox credentials
 

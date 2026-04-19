@@ -7,7 +7,7 @@ Enables cross-channel context by accurately linking messages from different apps
 import logging
 from typing import Dict, Optional, Any, List, Tuple
 from sqlalchemy.orm import Session
-from src.services.database import SessionLocal
+from src.database.connection import SessionLocal
 from src.models.customer import Customer
 from src.utils.embeddings import generate_embedding, cosine_similarity
 import numpy as np

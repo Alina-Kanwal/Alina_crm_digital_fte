@@ -70,11 +70,14 @@ class CorrelationIDMiddleware(BaseHTTPMiddleware):
         from src.middleware.logging import set_correlation_id
         set_correlation_id(correlation_id)
 
-        # Add to OpenTelemetry context
-        from opentelemetry import trace
-        current_span = trace.get_current_span()
-        if current_span:
-            current_span.set_attribute("correlation.id", correlation_id)
+        # Add to OpenTelemetry context if available
+        try:
+            from opentelemetry import trace
+            current_span = trace.get_current_span()
+            if current_span:
+                current_span.set_attribute("correlation.id", correlation_id)
+        except (ImportError, AttributeError):
+            pass
 
         logger.info(
             f"Request started: {request.method} {request.url.path}, "

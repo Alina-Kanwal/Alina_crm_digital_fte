@@ -11,7 +11,7 @@ export default function DealsPage() {
   const [formData, setFormData] = useState({ title: "", value: "", customer_id: "", stage: "new" });
   const [isSubmitting, setIsSubmitting] = useState(false);
   
-  const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+  const BACKEND = process.env.NEXT_PUBLIC_API_URL || 'https://alina-crm-digital-fte.onrender.com';
 
   const fetchDeals = async () => {
     try {

@@ -65,6 +65,19 @@ from src.middleware.logging import configure_logging
 
 # Configure database
 from src.database.connection import init_db, close_db, check_db_health
+from src.config.settings import get_settings
+
+# Validate critical environment variables on startup
+settings = get_settings()
+logger.info(f"Environment: {settings.APP_ENVIRONMENT}")
+logger.info(f"Debug mode: {settings.DEBUG}")
+
+# Check for critical configuration
+if not settings.OPENAI_API_KEY or settings.OPENAI_API_KEY == "":
+    logger.warning("OPENAI_API_KEY is not set - AI features will be disabled")
+
+if not settings.DATABASE_URL or settings.DATABASE_URL == "postgresql+asyncpg://dte_user:dte_password@localhost:5432/dte_db":
+    logger.warning("Using default DATABASE_URL - please set DATABASE_URL environment variable for production")
 
 
 # Initialize structured logging
@@ -106,14 +119,55 @@ if OPENTELEMETRY_AVAILABLE:
     # Instrument FastAPI for tracing
     FastAPIInstrumentor.instrument_app(app)
 
-# Add CORS middleware (production settings would be tighter)
+
+# Detailed CORS Configuration for Production
+# -------------------------------------------------------------------------
+# We allow specific production domains + localhost
+backend_settings = get_settings()
+raw_origins = os.getenv("ALLOW_ORIGINS", "")
+if not raw_origins:
+    # Use settings default or hardcoded safe list
+    allowed_origins = [
+        "https://frontend-guh8wmwzf-waqars-projects-a158f328.vercel.app",
+        "https://frontend-1mowzjmuj-waqars-projects-a158f328.vercel.app",
+        "https://alina-crm-digital-fte.onrender.com",
+        "http://localhost:3000",
+        "http://localhost:8000"
+    ]
+else:
+    allowed_origins = raw_origins.split(",")
+
+# CRITICAL FIX: allow_origins=['*'] is NOT allowed if allow_credentials=True.
+# We explicitly set allow_credentials based on the origins list.
+allow_creds = os.getenv("ALLOW_CREDENTIALS", "True").lower() == "true"
+if "*" in allowed_origins and allow_creds:
+    logger.warning("CORS '*' with credentials=True detected. Disabling credentials to prevent crash.")
+    allow_creds = False
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=os.getenv("ALLOW_ORIGINS", "*").split(","),
-    allow_credentials=True,
+    allow_origins=allowed_origins,
+    allow_credentials=allow_creds,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    expose_headers=["X-Correlation-ID"],
 )
+
+# -------------------------------------------------------------------------
+# Middleware Stack Order (FastAPI add_middleware prepends to the stack)
+# -------------------------------------------------------------------------
+
+# 1. Add Error Handling (should be OUTERMOST to catch everything)
+from src.middleware.errors import ErrorHandlerMiddleware
+app.add_middleware(ErrorHandlerMiddleware)
+
+# 2. Add Structured Logging (should be inside Error Handler)
+from src.middleware.logging import LoggingMiddleware
+app.add_middleware(LoggingMiddleware)
+
+# 3. Add Correlation ID (should be inside Logging)
+from src.middleware.correlation import CorrelationIDMiddleware
+app.add_middleware(CorrelationIDMiddleware)
 
 # Add Prometheus metrics middleware
 @app.middleware("http")
@@ -135,36 +189,30 @@ async def metrics_middleware(request: Request, call_next):
         ).inc()
         raise
 
-# Add correlation ID middleware
-from src.middleware.correlation import CorrelationIDMiddleware
-app.add_middleware(CorrelationIDMiddleware)
-
-# Add structured logging middleware
-from src.middleware.logging import LoggingMiddleware
-app.add_middleware(LoggingMiddleware)
-
-# Add error handling middleware
-from src.middleware.errors import ErrorHandlerMiddleware
-app.add_middleware(ErrorHandlerMiddleware)
-
 # Startup and shutdown events
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Application lifespan context manager."""
     logger.info("Starting Digital FTE Agent API...")
 
-    # Initialize database
+    # Initialize database with better error handling
     try:
         await init_db()
         logger.info("Database initialized successfully")
     except Exception as e:
         logger.error(f"Failed to initialize database: {e}")
-        raise
+        logger.error("Application will continue but database-dependent features may fail")
+        # Don't raise - allow app to start for health checks to work
+        # In production, you might want to fail fast, but for debugging let it start
 
-
-    # 🚀 Start Digital FTE Living Agent (24/7 Autonomous Brain)
-    from src.services.living_agent import living_agent
-    asyncio.create_task(living_agent.start_working_247())
+    # 🚀 Start Digital FTE Living Agent (24/7 Autonomous Brain) with error handling
+    try:
+        from src.services.living_agent import living_agent
+        asyncio.create_task(living_agent.start_working_247())
+        logger.info("Digital FTE Living Agent started")
+    except Exception as e:
+        logger.error(f"Failed to start Living Agent: {e}")
+        # Continue without living agent for now
 
     logger.info("Digital FTE Agent API startup complete")
 
@@ -172,8 +220,10 @@ async def lifespan(app: FastAPI):
 
     # Shutdown: cleanup resources
     logger.info("Shutting down Digital FTE Agent API...")
-    await close_db()
-
+    try:
+        await close_db()
+    except Exception as e:
+        logger.error(f"Error closing database connections: {e}")
 
     logger.info("Digital FTE Agent API shutdown complete")
 

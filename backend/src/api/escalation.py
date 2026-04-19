@@ -10,7 +10,7 @@ import logging
 
 from src.services.escalation.engine import EscalationEngine, EscalationTrigger, EscalationSeverity
 from src.services.escalation.notifier import HumanAgentNotifier
-from src.services.database import SessionLocal
+from src.database.connection import SessionLocal
 from src.models.support_ticket import SupportTicket
 
 logger = logging.getLogger(__name__)
