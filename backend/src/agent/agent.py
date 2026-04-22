@@ -119,6 +119,7 @@ class AIAgent:
 
             # 5. Handle Tool Calls (If model decides to search or escalate)
             if hasattr(message, "tool_calls") and message.tool_calls:
+                msgs.append(message)
                 for tool_call in message.tool_calls:
                     func_name = tool_call.function.name
                     import json
@@ -126,22 +127,12 @@ class AIAgent:
 
                     if func_name == "search_knowledge_base":
                         search_result = await search_knowledge_base(args["query"])
-                        # Recursive step to provide answer from search results
-                        msgs.append(message)
                         msgs.append({
                             "role": "tool",
                             "tool_call_id": tool_call.id,
                             "name": func_name,
                             "content": str(search_result)
                         })
-                        
-                        follow_up = await litellm.acompletion(
-                            model=self.model,
-                            messages=msgs,
-                            api_key=self.api_key,
-                            api_base=self.api_base
-                        )
-                        final_content = follow_up.choices[0].message.content
 
                     elif func_name == "should_escalate":
                         # Immediate escalation trigger
@@ -151,6 +142,15 @@ class AIAgent:
                             "escalated": True,
                             "success": True
                         }
+
+                # Final follow-up after all tool calls are handled
+                follow_up = await litellm.acompletion(
+                    model=self.model,
+                    messages=msgs,
+                    api_key=self.api_key,
+                    api_base=self.api_base
+                )
+                final_content = follow_up.choices[0].message.content
 
             sentiment_res = await sentiment_task
             
