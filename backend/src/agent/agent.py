@@ -15,17 +15,28 @@ from src.agent.tools.escalation import should_escalate
 logger = logging.getLogger(__name__)
 
 class AIAgent:
-    """Production-ready AI agent tailored for GROQ + LiteLLM."""
+    """Production-ready AI agent tailored for Alibaba DashScope & Groq."""
 
     def __init__(self):
-        # Default to Groq Llama 3.1 70B for best reasoning/tool performance
-        self.model = os.getenv("GROQ_MODEL", "groq/llama-3.1-70b-versatile")
-        self.api_key = os.getenv("GROQ_API_KEY")
-        self.api_base = os.getenv("GROQ_API_BASE", "https://api.groq.com/openai/v1")
+        # Primary: Alibaba DashScope (Qwen)
+        self.dashscope_key = os.getenv("DASHSCOPE_API_KEY")
+        
+        if self.dashscope_key:
+            self.model = os.getenv("DASHSCOPE_MODEL", "qwen-plus")
+            self.api_key = self.dashscope_key
+            self.api_base = os.getenv("DASHSCOPE_API_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+            logger.info(f"Agent initialized with Alibaba DashScope: {self.model}")
+        else:
+            # Fallback: Groq (Legacy)
+            self.model = os.getenv("GROQ_MODEL", "groq/llama-3.1-70b-versatile")
+            self.api_key = os.getenv("GROQ_API_KEY")
+            self.api_base = os.getenv("GROQ_API_BASE", "https://api.groq.com/openai/v1")
+            logger.info(f"Agent initialized with Fallback (Groq): {self.model}")
         
         # Configure LiteLLM for stability
         litellm.drop_params = True
         litellm.telemetry = False
+
 
     async def get_system_instructions(self) -> str:
         """Centralized system prompt for the Digital FTE Agent."""

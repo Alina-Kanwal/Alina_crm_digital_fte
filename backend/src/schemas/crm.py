@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 from typing import Optional, List, Dict, Any
 from datetime import datetime
 from src.models.user import UserRole
@@ -19,8 +19,7 @@ class UserResponse(UserBase):
     is_active: bool
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Deal Schemas
 class DealBase(BaseModel):
@@ -46,8 +45,7 @@ class DealResponse(DealBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Task Schemas
 class TaskBase(BaseModel):
@@ -74,8 +72,7 @@ class TaskResponse(TaskBase):
     created_at: datetime
     updated_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 # Customer schemas
 class CustomerBase(BaseModel):
@@ -94,5 +91,4 @@ class CustomerResponse(CustomerBase):
     lead_score: float = 0.0
     created_at: datetime
     
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

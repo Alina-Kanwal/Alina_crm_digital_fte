@@ -23,14 +23,14 @@ RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
 # Upgrade pip and install build requirements
-COPY backend/requirements.txt .
+COPY requirements.txt .
 RUN pip install --no-cache-dir -U pip && \
     pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
-COPY backend/src /app/src
-COPY backend/alembic /app/alembic
-COPY backend/pyproject.toml /app/
+COPY src /app/src
+COPY alembic /app/alembic
+COPY pyproject.toml /app/
 
 # Stage 2: Production Image
 FROM python:3.11-slim
@@ -52,7 +52,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONDONTWRITEPYC=1 \
     PATH="/opt/venv/bin:$PATH" \
     APP_HOME=/app \
-    PYTHONPATH="/app/src:$PYTHONPATH"
+    PYTHONPATH="/app:$PYTHONPATH"
 
 # Install runtime dependencies only
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -68,16 +68,16 @@ USER appuser
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
-    CMD curl -f http://localhost:8000/health/live || exit 1
+    CMD curl -f http://localhost:7860/health/live || exit 1
 
-# Expose port
-EXPOSE 8000
+# Expose port (Hugging Face standard)
+EXPOSE 7860
 
 # Run application using Gunicorn for production process management
 CMD ["gunicorn", "src.main:app", \\
      "--workers", "4", \\
      "--worker-class", "uvicorn.workers.UvicornWorker", \\
-     "--bind", "0.0.0.0:8000", \\
+     "--bind", "0.0.0.0:7860", \\
      "--access-logfile", "-", \\
      "--error-logfile", "-", \\
      "--log-level", "info", \\

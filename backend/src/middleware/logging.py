@@ -99,7 +99,7 @@ class JSONFormatter(logging.Formatter):
         """
         # Create log entry
         log_entry = {
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": datetime.now(datetime.UTC).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),

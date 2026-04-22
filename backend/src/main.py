@@ -128,9 +128,10 @@ raw_origins = os.getenv("ALLOW_ORIGINS", "")
 if not raw_origins:
     # Use settings default or hardcoded safe list
     allowed_origins = [
-        "https://frontend-guh8wmwzf-waqars-projects-a158f328.vercel.app",
-        "https://frontend-1mowzjmuj-waqars-projects-a158f328.vercel.app",
-        "https://alina-crm-digital-fte.onrender.com",
+        "https://alina-crm-digital-fte.vercel.app",
+        "https://digital-fte-webform.vercel.app",
+        "https://*.hf.space",
+        "https://*.vercel.app",
         "http://localhost:3000",
         "http://localhost:8000"
     ]

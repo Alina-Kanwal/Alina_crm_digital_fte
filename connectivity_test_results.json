@@ -1,0 +1,52 @@
+{
+  "summary": {
+    "total": 5,
+    "passed": 0,
+    "failed": 4,
+    "warned": 1,
+    "success_rate": 0.0
+  },
+  "results": [
+    {
+      "timestamp": "2026-04-21T11:02:28.391772",
+      "component": "Database",
+      "test": "PostgreSQL Connection",
+      "status": "FAIL",
+      "details": "'NoneType' object has no attribute 'replace'",
+      "metrics": {}
+    },
+    {
+      "timestamp": "2026-04-21T11:02:39.408393",
+      "component": "Groq API",
+      "test": "Models List",
+      "status": "FAIL",
+      "details": "Status code: 401, Error: {\"error\":{\"message\":\"Invalid API Key\",\"type\":\"invalid_request_error\",\"code\":\"invalid_api_key\"}}\n",
+      "metrics": {}
+    },
+    {
+      "timestamp": "2026-04-21T11:02:49.456257",
+      "component": "Resend API",
+      "test": "API Key Validation",
+      "status": "FAIL",
+      "details": "Status code: 400, Error: {\"statusCode\":400,\"message\":\"API key is invalid\",\"name\":\"validation_error\"}",
+      "metrics": {}
+    },
+    {
+      "timestamp": "2026-04-21T11:02:59.762105",
+      "component": "Kafka",
+      "test": "Connection",
+      "status": "FAIL",
+      "details": "NoBrokersAvailable",
+      "metrics": {}
+    },
+    {
+      "timestamp": "2026-04-21T11:02:59.762143",
+      "component": "Kafka",
+      "test": "Connection",
+      "status": "WARN",
+      "details": "Kafka not configured yet - will be set up as part of automation",
+      "metrics": {}
+    }
+  ],
+  "timestamp": "2026-04-21T11:02:59.763820"
+}

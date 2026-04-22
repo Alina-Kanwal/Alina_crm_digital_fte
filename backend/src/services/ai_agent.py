@@ -1,26 +1,31 @@
 """
-Groq API integration with custom function tools.
-Implements the AI core for the Digital FTE agent using Groq's high-speed LPU inference.
+Alibaba Cloud AI Agent Integration.
+Switches the core engine from Groq to Alibaba DashScope (Qwen).
 """
 import os
 import logging
 import json
 from typing import List, Dict, Any, Optional
-from groq import Groq
+from openai import OpenAI
 
 logger = logging.getLogger(__name__)
 
-# Initialize Groq client with fail-safe for environment variables
-_groq_api_key = os.getenv("GROQ_API_KEY")
-if not _groq_api_key:
-    logger.warning("GROQ_API_KEY not found in environment. AI Agent will be inactive.")
-    groq_client = None
+# Initialize DashScope client (OpenAI compatible)
+_dashscope_api_key = os.getenv("DASHSCOPE_API_KEY")
+_dashscope_base_url = os.getenv("DASHSCOPE_API_BASE", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+
+if not _dashscope_api_key:
+    logger.warning("DASHSCOPE_API_KEY not found in environment. AI Agent will be inactive.")
+    client = None
 else:
     try:
-        groq_client = Groq(api_key=_groq_api_key)
+        client = OpenAI(
+            api_key=_dashscope_api_key,
+            base_url=_dashscope_base_url
+        )
     except Exception as e:
-        logger.error(f"Failed to initialize Groq client: {e}")
-        groq_client = None
+        logger.error(f"Failed to initialize DashScope client: {e}")
+        client = None
 
 # Initialize supporting services
 from src.services.doc_search import DocumentSearchService
@@ -59,14 +64,14 @@ def escalate_to_human(reason: str, context: str) -> str:
         return f"Error during escalation: {str(e)}"
 
 async def analyze_sentiment_internal(text: str) -> Dict[str, Any]:
-    """Analyze customer sentiment using Groq."""
-    if not groq_client:
+    """Analyze customer sentiment using Alibaba Qwen."""
+    if not client:
         return {"sentiment": "neutral", "score": 0.0, "confidence": 0.0}
     try:
         prompt = f"Analyze the sentiment of the following customer support message. Provide a sentiment label (positive, neutral, negative) and a sentiment score between -1.0 and 1.0.\n\nMessage: {text}\n\nReturn ONLY a JSON object with 'sentiment' and 'score' keys."
         
-        response = groq_client.chat.completions.create(
-            model=os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile"),
+        response = client.chat.completions.create(
+            model=os.getenv("DASHSCOPE_MODEL", "qwen-plus"),
             messages=[{"role": "user", "content": prompt}],
             response_format={"type": "json_object"}
         )
@@ -78,12 +83,12 @@ async def analyze_sentiment_internal(text: str) -> Dict[str, Any]:
             "confidence": 0.98
         }
     except Exception as e:
-        logger.error(f"Error analyzing sentiment with Groq: {e}")
+        logger.error(f"Error analyzing sentiment with Qwen: {e}")
         return {"sentiment": "neutral", "score": 0.0, "confidence": 0.0}
 
 class AIAgent:
     def __init__(self):
-        self.model = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+        self.model = os.getenv("DASHSCOPE_MODEL", "qwen-plus")
         self.instructions = """You are an elite AI Customer Success Agent. Your mission is to provide FLAWLESS support using ONLY verified information.
 
 ### RIGOROUS GROUNDING RULES:
@@ -149,11 +154,11 @@ Your goal is 100% accuracy and high customer satisfaction."""
         ]
 
     def is_available(self) -> bool:
-        return True
+        return client is not None
 
-    def process_inquiry(self, message: Dict, conversation_history: List[Dict] = None) -> Dict:
-        """Process inquiry using Groq with Tool Calling."""
-        if not groq_client:
+    async def process_inquiry(self, message: Dict, conversation_history: List[Dict] = None) -> Dict:
+        """Process inquiry using Qwen with Tool Calling."""
+        if not client:
              return self._get_fallback_response(message, "AI Client not initialized")
         try:
             messages = [
@@ -163,7 +168,8 @@ Your goal is 100% accuracy and high customer satisfaction."""
 
             # Tool Calling Loop (Limit to 3 iterations for safety)
             for _ in range(3):
-                response = groq_client.chat.completions.create(
+                # DashScope (OpenAI compatible) supports tool calling
+                response = client.chat.completions.create(
                     model=self.model,
                     messages=messages,
                     tools=self.tools,
@@ -175,8 +181,7 @@ Your goal is 100% accuracy and high customer satisfaction."""
 
                 if not tool_calls:
                     # Final response generated
-                    import asyncio
-                    sentiment_result = asyncio.run(analyze_sentiment_internal(message.get('body', '')))
+                    sentiment_result = await analyze_sentiment_internal(message.get('body', ''))
                     
                     return {
                         'response': response_message.content,
@@ -210,7 +215,7 @@ Your goal is 100% accuracy and high customer satisfaction."""
                     })
 
         except Exception as e:
-            logger.error(f"Error processing inquiry with Groq agent: {e}")
+            logger.error(f"Error processing inquiry with Qwen agent: {e}")
             return self._get_fallback_response(message, str(e))
 
     def _build_conversation_context(self, message: Dict, conversation_history: List[Dict]) -> str:

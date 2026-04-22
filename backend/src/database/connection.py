@@ -66,11 +66,13 @@ def _get_clean_urls(_url: str):
         or "neon.tech" in _url.lower()  # Neon always needs SSL
     )
     
-    # Async Config — use postgresql+asyncpg protocol
-    if "postgresql+asyncpg" in clean_base:
+    # Async Config — use postgresql+asyncpg or sqlite+aiosqlite
+    if "postgresql+asyncpg" in clean_base or "sqlite+aiosqlite" in clean_base:
         async_url = clean_base
     elif clean_base.startswith("postgresql://"):
         async_url = clean_base.replace("postgresql://", "postgresql+asyncpg://", 1)
+    elif clean_base.startswith("sqlite://"):
+        async_url = clean_base.replace("sqlite://", "sqlite+aiosqlite://", 1)
     else:
         async_url = clean_base
     
@@ -78,13 +80,14 @@ def _get_clean_urls(_url: str):
     if is_ssl:
         async_args["ssl"] = True
     
-    # Sync Config — use plain postgresql:// protocol for psycopg2
+    # Sync Config — remove async prefixes
     sync_url = async_url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    sync_url = sync_url.replace("sqlite+aiosqlite://", "sqlite://", 1)
     sync_args = {}
     if is_ssl:
         sync_args["sslmode"] = "require"
     
-    logger.info(f"DB CONFIG: host={async_url.split('@')[-1].split('/')[0]}, ssl={is_ssl}")
+    logger.info(f"DB CONFIG: host={async_url.split('@')[-1].split('/')[-1]}, ssl={is_ssl}")
     
     return async_url, async_args, sync_url, sync_args
 

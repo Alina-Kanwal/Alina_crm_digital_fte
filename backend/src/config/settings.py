@@ -7,8 +7,8 @@ with validation and defaults.
 
 import os
 from typing import Optional, List
-from pydantic_settings import BaseSettings
-from pydantic import Field, validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator
 
 
 class Settings(BaseSettings):
@@ -103,17 +103,17 @@ class Settings(BaseSettings):
 
     # CORS
     ALLOW_ORIGINS: List[str] = Field(
-        default=["*"], env="ALLOW_ORIGINS"
+        default=["*"]
     )
 
-    @validator("APP_ENVIRONMENT")
+    @field_validator("APP_ENVIRONMENT")
     def validate_environment(cls, v):
         """Validate environment value."""
         if v not in ["development", "staging", "production"]:
             raise ValueError("ENVIRONMENT must be 'development', 'staging', or 'production'")
         return v
 
-    @validator("LOG_LEVEL")
+    @field_validator("LOG_LEVEL")
     def validate_log_level(cls, v):
         """Validate log level value."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -121,7 +121,7 @@ class Settings(BaseSettings):
             raise ValueError(f"LOG_LEVEL must be one of {valid_levels}")
         return v.upper()
 
-    @validator("CROSS_CHANNEL_ID_THRESHOLD")
+    @field_validator("CROSS_CHANNEL_ID_THRESHOLD")
     def validate_id_threshold(cls, v):
         """Validate cross-channel ID threshold."""
         if not 0.5 <= v <= 1.0:
@@ -138,11 +138,12 @@ class Settings(BaseSettings):
         """Check if running in development."""
         return self.APP_ENVIRONMENT.lower() == "development"
 
-    class Config:
-        """Pydantic settings configuration."""
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = False
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=False,
+        extra="ignore"
+    )
 
 
 # Global settings instance

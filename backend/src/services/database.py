@@ -6,8 +6,7 @@ Falls back to SQLite for development when PostgreSQL is not available.
 
 import os
 from sqlalchemy import create_engine, text
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker, Session
+from sqlalchemy.orm import sessionmaker, Session, declarative_base
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -22,8 +21,12 @@ def _get_clean_sync_url(_url: str):
     """Sanitize and return sync connection config for psycopg2.
     Strips all query params (channel_binding, sslmode etc.) that belong in connect_args.
     """
-    if not _url or "sqlite" in _url:
+    # Only apply special SQLite handling if we have a non-empty URL that contains "sqlite"
+    if _url and "sqlite" in _url:
         return _url or "sqlite:///./test.db", {}
+    # For empty strings or other falsy values, let the fallback in _RAW_DATABASE_URL handle it
+    # Return the URL as-is (could be empty string, None, or actual URL)
+    return _url, {}
 
     # Strip all query params
     clean_base = _url.split('?')[0]
