@@ -1,20 +1,30 @@
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException
 from typing import List
-from sqlalchemy.orm import Session
-from sqlalchemy import desc
-from src.database.connection import get_db_session as get_db
+
 from src.schemas.crm import (
     CustomerResponse, CustomerCreate,
     DealResponse, DealCreate, DealUpdate,
     TaskResponse, TaskCreate, TaskUpdate,
 )
-from src.repositories import CustomerRepository, DealRepository, TaskRepository, UserRepository
 from src.models.deal import DealStage
-from src.models.audit_log import AuditLog, AuditActionType
+from src.models.audit_log import AuditActionType
+from src.repositories.back4app_repositories import (
+    B4ACustomerRepository,
+    B4ADealRepository,
+    B4ATaskRepository,
+    B4AAuditLogRepository,
+)
 from src.services.inquiry_processor import InquiryProcessor
 
 router = APIRouter()
 inquiry_processor = InquiryProcessor()
+
+# Module-level repo instances (stateless — safe to share)
+_customers = B4ACustomerRepository()
+_deals     = B4ADealRepository()
+_tasks     = B4ATaskRepository()
+_audit     = B4AAuditLogRepository()
+
 
 # ──────────────────────────────────────────────────────────
 # Inquiry Endpoint (from landing page)
@@ -34,127 +44,143 @@ async def handle_crm_inquiry(inquiry_data: dict):
 
 
 # ──────────────────────────────────────────────────────────
-# Dashboard Stats — real counts from DB
+# Dashboard Stats — real counts from Back4App
 # ──────────────────────────────────────────────────────────
 @router.get("/stats")
-def get_dashboard_stats(db: Session = Depends(get_db)):
-    cust_repo = CustomerRepository(db)
-    deal_repo = DealRepository(db)
-    task_repo = TaskRepository(db)
+def get_dashboard_stats():
+    try:
+        total_customers = len(_customers.get_all(limit=10_000))
+        total_deals     = len(_deals.get_all(limit=10_000))
+        total_tasks     = len(_tasks.get_all(limit=10_000))
 
-    total_customers = len(cust_repo.get_all(limit=10_000))
-    total_deals     = len(deal_repo.get_all(limit=10_000))
-    total_tasks     = len(task_repo.get_all(limit=10_000))
+        all_customers    = _customers.get_all(limit=10_000)
+        high_intent_count = sum(1 for c in all_customers if (c.lead_score or 0) > 50)
 
-    all_customers = cust_repo.get_all(limit=10_000)
-    high_intent_count = sum(1 for c in all_customers if (c.lead_score or 0) > 50)
+        auto_assigned = _audit.count_by_action(AuditActionType.DEAL_AUTO_ASSIGNED)
+        nudge_tasks   = _audit.count_by_action(AuditActionType.NUDGE_TASK_CREATED)
 
-    # Real autonomous-action counts from AuditLog
-    auto_assigned = (
-        db.query(AuditLog)
-        .filter(AuditLog.action_type == AuditActionType.DEAL_AUTO_ASSIGNED)
-        .count()
-    )
-    nudge_tasks = (
-        db.query(AuditLog)
-        .filter(AuditLog.action_type == AuditActionType.NUDGE_TASK_CREATED)
-        .count()
-    )
+        efficiency = 98.4 if total_customers > 0 else 100.0
 
-    # Derive a stable high efficiency for 'The team member who never clocks out'
-    efficiency = 98.4 if total_customers > 0 else 100.0
-
-    return {
-        "total_leads":       total_customers,
-        "total_deals":       total_deals,
-        "total_tasks":       total_tasks,
-        "auto_assigned_deals": auto_assigned,
-        "nudge_tasks":       nudge_tasks,
-        "high_intent_leads": high_intent_count,
-        "agent_status":      "active",
-        "efficiency":        efficiency,
-        "actions_taken":     auto_assigned + nudge_tasks
-    }
+        return {
+            "total_leads":        total_customers,
+            "total_deals":        total_deals,
+            "total_tasks":        total_tasks,
+            "auto_assigned_deals": auto_assigned,
+            "nudge_tasks":        nudge_tasks,
+            "high_intent_leads":  high_intent_count,
+            "agent_status":       "active",
+            "efficiency":         efficiency,
+            "actions_taken":      auto_assigned + nudge_tasks,
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ──────────────────────────────────────────────────────────
 # Audit Log — real activity feed for the dashboard
 # ──────────────────────────────────────────────────────────
 @router.get("/audit-logs")
-def get_audit_logs(db: Session = Depends(get_db), limit: int = 20):
+def get_audit_logs(limit: int = 20):
     """Return the most recent autonomous actions recorded by the system."""
-    logs = (
-        db.query(AuditLog)
-        .order_by(desc(AuditLog.created_at))
-        .limit(limit)
-        .all()
-    )
-    return [
-        {
-            "id":          log.id,
-            "action_type": log.action_type.value,
-            "message":     log.message,
-            "entity_id":   log.entity_id,
-            "entity_type": log.entity_type,
-            "created_at":  log.created_at.isoformat() if log.created_at else None,
-        }
-        for log in logs
-    ]
+    try:
+        logs = _audit.get_recent(limit=limit)
+        return [
+            {
+                "id":          log.id,
+                "action_type": log.action_type.value,
+                "message":     log.message,
+                "entity_id":   log.entity_id,
+                "entity_type": log.entity_type,
+                "created_at":  log.created_at.isoformat() if log.created_at else None,
+            }
+            for log in logs
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ──────────────────────────────────────────────────────────
 # Customer Endpoints
 # ──────────────────────────────────────────────────────────
 @router.get("/customers", response_model=List[CustomerResponse])
-def get_customers(db: Session = Depends(get_db), skip: int = 0, limit: int = 100):
-    return CustomerRepository(db).get_all(skip=skip, limit=limit)
+def get_customers(skip: int = 0, limit: int = 100):
+    try:
+        return _customers.get_all(skip=skip, limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/customers", response_model=CustomerResponse)
-def create_customer(customer: CustomerCreate, db: Session = Depends(get_db)):
-    repo = CustomerRepository(db)
-    if repo.get_by_email(customer.email):
-        raise HTTPException(status_code=400, detail="Email already registered.")
-    return repo.create(customer)
+def create_customer(customer: CustomerCreate):
+    try:
+        if _customers.get_by_email(customer.email):
+            raise HTTPException(status_code=400, detail="Email already registered.")
+        return _customers.create(customer)
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ──────────────────────────────────────────────────────────
 # Deal Endpoints
 # ──────────────────────────────────────────────────────────
 @router.get("/deals", response_model=List[DealResponse])
-def get_deals(db: Session = Depends(get_db), skip: int = 0, limit: int = 100):
-    return DealRepository(db).get_all(skip=skip, limit=limit)
+def get_deals(skip: int = 0, limit: int = 100):
+    try:
+        return _deals.get_all(skip=skip, limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/deals", response_model=DealResponse)
-def create_deal(deal: DealCreate, db: Session = Depends(get_db)):
-    return DealRepository(db).create(deal)
+def create_deal(deal: DealCreate):
+    try:
+        return _deals.create(deal)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/deals/{deal_id}", response_model=DealResponse)
-def update_deal(deal_id: str, deal_update: DealUpdate, db: Session = Depends(get_db)):
-    updated = DealRepository(db).update(deal_id, deal_update)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Deal not found.")
-    return updated
+def update_deal(deal_id: str, deal_update: DealUpdate):
+    try:
+        updated = _deals.update(deal_id, deal_update)
+        if not updated:
+            raise HTTPException(status_code=404, detail="Deal not found.")
+        return updated
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ──────────────────────────────────────────────────────────
 # Task Endpoints
 # ──────────────────────────────────────────────────────────
 @router.get("/tasks", response_model=List[TaskResponse])
-def get_tasks(db: Session = Depends(get_db), skip: int = 0, limit: int = 100):
-    return TaskRepository(db).get_all(skip=skip, limit=limit)
+def get_tasks(skip: int = 0, limit: int = 100):
+    try:
+        return _tasks.get_all(skip=skip, limit=limit)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/tasks", response_model=TaskResponse)
-def create_task(task: TaskCreate, db: Session = Depends(get_db)):
-    return TaskRepository(db).create(task)
+def create_task(task: TaskCreate):
+    try:
+        return _tasks.create(task)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.put("/tasks/{task_id}", response_model=TaskResponse)
-def update_task(task_id: str, task_update: TaskUpdate, db: Session = Depends(get_db)):
-    updated = TaskRepository(db).update(task_id, task_update)
-    if not updated:
-        raise HTTPException(status_code=404, detail="Task not found.")
-    return updated
+def update_task(task_id: str, task_update: TaskUpdate):
+    try:
+        updated = _tasks.update(task_id, task_update)
+        if not updated:
+            raise HTTPException(status_code=404, detail="Task not found.")
+        return updated
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))

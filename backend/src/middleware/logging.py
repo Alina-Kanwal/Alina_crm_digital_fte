@@ -11,7 +11,7 @@ import logging.config
 import sys
 import json
 from typing import Any, Dict, Optional, Callable
-from datetime import datetime
+from datetime import datetime, timezone
 from contextvars import ContextVar
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -99,7 +99,7 @@ class JSONFormatter(logging.Formatter):
         """
         # Create log entry
         log_entry = {
-            "timestamp": datetime.now(datetime.UTC).isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat(),
             "level": record.levelname,
             "logger": record.name,
             "message": record.getMessage(),

@@ -23,6 +23,14 @@ services:
         sync: false  # Set this in Render Dashboard → Environment tab
       - key: GROQ_MODEL
         value: "groq/llama-3.3-70b-versatile"
+      - key: BACK4APP_APP_ID
+        value: "FcVby6MAuPrhrEpGNxoSQkFZGFyZfUl1vNXY5pzD"
+      - key: BACK4APP_REST_KEY
+        value: "56fktqNfUVaR3Qmgwi4tiWCMkLUfeRTcoWlLeChT"
+      - key: BACK4APP_MASTER_KEY
+        value: "bXtngmmSVpRDrERLH1nuhKyzgIx5MuWklKbWsJJR"
+      - key: BACK4APP_API_URL
+        value: "https://parseapi.back4app.com"
       - key: LOG_LEVEL
         value: "info"
       - key: WORKERS
